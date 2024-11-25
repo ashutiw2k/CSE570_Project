@@ -156,6 +156,10 @@ class Config:
             elif self.machine == 'aw2':
                 self.user = 'brcao'
                 self.root_path = '/media/' + self.user + '/eData2'
+            elif self.machine == 'asus':
+                self.user = 'ashutosh'
+                self.root_path = '/home/' + self.user
+            # Aditya Add unique machine name for yourself to run properly.
         else:
             self.user = 'None'
             self.root_path = args.root_path
