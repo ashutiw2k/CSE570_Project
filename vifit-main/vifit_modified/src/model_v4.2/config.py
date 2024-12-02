@@ -159,6 +159,9 @@ class Config:
             elif self.machine == 'asus':
                 self.user = 'ashutosh'
                 self.root_path = '/home/' + self.user + '/Course-Code/CSE570_Project'
+            elif self.machine == 'addy':
+                self.user = 'addy1999'
+                self.root_path = '/home/' + self.user + '/Desktop/CSE 570 Proj'
             # Aditya Add unique machine name for yourself to run properly.
         else:
             self.user = 'None'
