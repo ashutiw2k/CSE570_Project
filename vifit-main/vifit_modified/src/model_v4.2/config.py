@@ -158,7 +158,7 @@ class Config:
                 self.root_path = '/media/' + self.user + '/eData2'
             elif self.machine == 'asus':
                 self.user = 'ashutosh'
-                self.root_path = '/home/' + self.user
+                self.root_path = '/home/' + self.user + '/Course-Code/CSE570_Project'
             # Aditya Add unique machine name for yourself to run properly.
         else:
             self.user = 'None'
