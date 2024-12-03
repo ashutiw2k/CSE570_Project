@@ -293,8 +293,8 @@ class Config:
         self.img_type += '_anonymized'
         self.img_path = self.seq_path + '/' + self.img_type
         self.img_path = self.img_path.replace('RAN4model_dfv4.2', 'RAN')
-        # self.RGBh_ts16_dfv4_ls = []
-        # global RGBh_ts16_dfv4_ls
+        # self.RGBh_ts16_dfv4p4_ls = []
+        # global RGBh_ts16_dfv4p4_ls
 
         self.n_subjects = 5 # dummy one
         if self.scene_id == 0: self.n_subjects = 5
@@ -331,44 +331,45 @@ class Config:
         self.IMUlgyqm13_sync_dfv4 = []
         self.FTM_sync_dfv4 = []
         self.seq_path_for_model = self.seq4model_root_path + '/' + self.seq_id
-        # self.RGBg_ts16_dfv4_ls_path = self.seq_path_for_model + '/RGBh_ts16_dfv4_ls.json' \
+        # self.RGBg_ts16_dfv4p4_ls_path = self.seq_path_for_model + '/RGBh_ts16_dfv4p4_ls.json' \
         #     if self.macro_scene == 'indoor' \
-        #     else self.seq_path_for_model + '/RGB_ts16_dfv4_ls.json'
+        #     else self.seq_path_for_model + '/RGB_ts16_dfv4p4_ls.json'
         # 'g' in RGBg_ts16_dfv4 stands for general, referring to either RGB_ts16_dfv4 or RGBh_ts16_dfv4.
-        self.RGBg_ts16_dfv4_ls_path = self.seq_path_for_model + '/RGBg_ts16_dfv4_ls.json'
-        self.RGBg_ts16_dfv4_valid_ls = []
-        # self.RGB_ts16_dfv4_ls = [img_path[-21:-4] for img_path in glob.glob(self.img_path + '/*')]
+        # self.RGBg_ts16_dfv4p4_ls_path = self.seq_path_for_model + '/RGBg_ts16_dfv4p4_ls.json'
+        self.RGBg_ts16_dfv4p4_ls_path = self.seq_path_for_model + '/RGBg_ts16_dfv4p4_ls.json'
+        self.RGBg_ts16_dfv4p4_valid_ls = []
+        # self.RGB_ts16_dfv4p4_ls = [img_path[-21:-4] for img_path in glob.glob(self.img_path + '/*')]
         # print(); print() # debug
-        # print('self.RGB_ts16_dfv4_ls: ', self.RGB_ts16_dfv4_ls)
-        with open(self.RGBg_ts16_dfv4_ls_path, 'r') as f:
-            self.RGBg_ts16_dfv4_ls = json.load(f)
-            print(self.RGBg_ts16_dfv4_ls_path, 'loaded!')
+        # print('self.RGB_ts16_dfv4p4_ls: ', self.RGB_ts16_dfv4p4_ls)
+        with open(self.RGBg_ts16_dfv4p4_ls_path, 'r') as f:
+            self.RGBg_ts16_dfv4p4_ls = json.load(f)
+            print(self.RGBg_ts16_dfv4p4_ls_path, 'loaded!')
 
         self.dataset4model_root_path = self.root_path + '/Data/datasets/RAN_All/RAN4model_dfv4.2'
         self.exp = 1 # edit
         if self.macro_scene == 'indoor':
-            self.start_end_ts16_indoor_dfv4_path = self.dataset4model_root_path + '/exps/exp' + \
-                str(self.exp) + '/start_end_ts16_dfv4_indoor.json'
+            self.start_end_ts16_indoor_dfv4p4_path = self.dataset4model_root_path + '/exps/exp' + \
+                str(self.exp) + '/start_end_ts16_dfv4p4_indoor.json'
         elif self.macro_scene == 'outdoor':
-            self.start_end_ts16_indoor_dfv4_path = self.dataset4model_root_path + '/exps/exp' + \
-                str(self.exp) + '/start_end_ts16_dfv4_outdoor.json'
-        with open(self.start_end_ts16_indoor_dfv4_path, 'r') as f:
+            self.start_end_ts16_indoor_dfv4p4_path = self.dataset4model_root_path + '/exps/exp' + \
+                str(self.exp) + '/start_end_ts16_dfv4p4_outdoor.json'
+        with open(self.start_end_ts16_indoor_dfv4p4_path, 'r') as f:
             self.seq_id_to_start_end_ts16_dfv4 = json.load(f)
-            print(self.start_end_ts16_indoor_dfv4_path, 'loaded!')
+            print(self.start_end_ts16_indoor_dfv4p4_path, 'loaded!')
 
-        self.sync_dfv4_path = self.seq_path_for_model + '/sync_ts16_dfv4'
-        if not os.path.exists(self.sync_dfv4_path): os.makedirs(self.sync_dfv4_path)
-        self.BBXC3_sync_dfv4_path = self.sync_dfv4_path + '/BBXC3_sync_dfv4.pkl'
-        self.BBX5_sync_dfv4_path = self.sync_dfv4_path + '/BBX5_sync_dfv4.pkl'
-        self.FTM_sync_dfv4_path = self.sync_dfv4_path + '/FTM_sync_dfv4.pkl'
+        self.sync_dfv4p4_path = self.seq_path_for_model + '/sync_ts16_dfv4'
+        if not os.path.exists(self.sync_dfv4p4_path): os.makedirs(self.sync_dfv4p4_path)
+        self.BBXC3_sync_dfv4p4_path = self.sync_dfv4p4_path + '/BBXC3_sync_dfv4.pkl'
+        self.BBX5_sync_dfv4p4_path = self.sync_dfv4p4_path + '/BBX5_sync_dfv4.pkl'
+        self.FTM_sync_dfv4p4_path = self.sync_dfv4p4_path + '/FTM_sync_dfv4.pkl'
 
-        self.IMU19_sync_dfv4_path = self.sync_dfv4_path + '/IMU19_sync_dfv4.pkl'
+        self.IMU19_sync_dfv4p4_path = self.sync_dfv4p4_path + '/IMU19_sync_dfv4.pkl'
         if self.imu200:
-            # self.IMU19_200_sync_dfv4_path = self.sync_dfv4_path + '/IMU19_200_sync_dfv4.pkl'
-            self.IMUaccgym9_200_sync_dfv4_path = self.sync_dfv4_path + '/IMUaccgym9_200_sync_dfv4.pkl'
+            # self.IMU19_200_sync_dfv4p4_path = self.sync_dfv4p4_path + '/IMU19_200_sync_dfv4.pkl'
+            self.IMUaccgym9_200_sync_dfv4p4_path = self.sync_dfv4p4_path + '/IMUaccgym9_200_sync_dfv4.pkl'
         elif self.imu_ned_pos2:
             self.IMU_NED_pos2_sync_dfv4bl_path = self.sync_dfv4bl_path + '/IMU_NED_pos2_sync_dfv4bl.pkl' # to be added
-        if not os.path.exists(self.sync_dfv4_path): os.makedirs(self.sync_dfv4_path)
+        if not os.path.exists(self.sync_dfv4p4_path): os.makedirs(self.sync_dfv4p4_path)
 
         # ------
         #  BBX5
@@ -397,8 +398,8 @@ class Config:
         #  IMU
         # -----
         self.IMU_path = self.seq_path + '/IMU'
-        self.IMU_dfv4_path = self.seq_path + '/IMU_dfv4' # ts13_dfv4 with offsets (os)
-        if not os.path.exists(self.IMU_dfv4_path): os.makedirs(self.IMU_dfv4_path)
+        self.IMU_dfv4p4_path = self.seq_path + '/IMU_dfv4' # ts13_dfv4 with offsets (os)
+        if not os.path.exists(self.IMU_dfv4p4_path): os.makedirs(self.IMU_dfv4p4_path)
 
         # -------
         #  IMU19
@@ -503,7 +504,7 @@ class Config:
         # --------------
         #  Video Window
         # --------------
-        self.crr_ts16_dfv4_ls_all_i = 0
+        self.crr_ts16_dfv4p4_ls_all_i = 0
         self.video_len = 0 # len(self.ts12_BBX5_all)
         self.len_win = args.len_win
         self.cumu_turning_angle = self.average_turning_angle * self.len_win
@@ -814,24 +815,24 @@ class Config:
         self.test_log_per_frame_file_path =''
         self.test_log_per_frame_file = None
 
-        self.ts16_dfv4_subj_i_to_BBX5_prime = defaultdict()
-        self.ts16_dfv4_subj_i_to_BBX5_prime_path_to_save = self.checkpoint_path_dict[self.running_mode] + '/ts16_dfv4_subj_i_to_BBX5_prime.pkl'
-        self.ts16_dfv4_to_pred_BBX5_labels = defaultdict()
-        self.ts16_dfv4_to_pred_BBX5_labels_path_to_save = self.checkpoint_path_dict[self.running_mode] + '/ts16_dfv4_to_pred_BBX5_labels.pkl'
+        self.ts16_dfv4p4_subj_i_to_BBX5_prime = defaultdict()
+        self.ts16_dfv4p4_subj_i_to_BBX5_prime_path_to_save = self.checkpoint_path_dict[self.running_mode] + '/ts16_dfv4p4_subj_i_to_BBX5_prime.pkl'
+        self.ts16_dfv4p4_to_pred_BBX5_labels = defaultdict()
+        self.ts16_dfv4p4_to_pred_BBX5_labels_path_to_save = self.checkpoint_path_dict[self.running_mode] + '/ts16_dfv4p4_to_pred_BBX5_labels.pkl'
 
-        self.ts16_dfv4_to_test_stats = defaultdict()
-        self.ts16_dfv4_to_test_stats_path_to_save = self.checkpoint_path_dict[self.running_mode] + '/ts16_dfv4_to_test_stats.pkl'
+        self.ts16_dfv4p4_to_test_stats = defaultdict()
+        self.ts16_dfv4p4_to_test_stats_path_to_save = self.checkpoint_path_dict[self.running_mode] + '/ts16_dfv4p4_to_test_stats.pkl'
 
         self.prev_gd_pred_phone_i_BBX_ls, self.prev_gd_pred_phone_i_BBXwDelta_ls, self.prev_gd_pred_phone_i_IMU_ls = [], [], []
         self.prev_hg_pred_phone_i_BBX_ls, self.prev_hg_pred_phone_i_BBXwDelta_ls, self.prev_hg_pred_phone_i_IMU_ls = [], [], []
         self.scene_test_stats = {'gd': {'BBX': {'TP': 0, 'TN': 0, 'FP': 0, 'FN': 0, 'correct_num': 0, 'total_num': 0, \
-                                            'IDSWITCH': np.nan, 'ts16_dfv4_BBX_IDP': 0.0, 'cumu_BBX_IDP': 0.0}, \
+                                            'IDSWITCH': np.nan, 'ts16_dfv4p4_BBX_IDP': 0.0, 'cumu_BBX_IDP': 0.0}, \
                                         'IMU': {'TP': 0, 'TN': 0, 'FP': 0, 'FN': 0, 'correct_num': 0, 'total_num': 0, \
-                                            'IDSWITCH': np.nan, 'ts16_dfv4_IMU_IDP': 0.0, 'cumu_IMU_IDP': 0.0}}, \
+                                            'IDSWITCH': np.nan, 'ts16_dfv4p4_IMU_IDP': 0.0, 'cumu_IMU_IDP': 0.0}}, \
                                  'hg': {'BBX': {'TP': 0, 'TN': 0, 'FP': 0, 'FN': 0, 'correct_num': 0, 'total_num': 0, \
-                                            'IDSWITCH': np.nan, 'ts16_dfv4_BBX_IDP': 0.0, 'cumu_BBX_IDP': 0.0}, \
+                                            'IDSWITCH': np.nan, 'ts16_dfv4p4_BBX_IDP': 0.0, 'cumu_BBX_IDP': 0.0}, \
                                         'IMU': {'TP': 0, 'TN': 0, 'FP': 0, 'FN': 0, 'correct_num': 0, 'total_num': 0, \
-                                            'IDSWITCH': np.nan, 'ts16_dfv4_IMU_IDP': 0.0, 'cumu_IMU_IDP': 0.0}}} # hg: Hungarian, gd: greedy-matching
+                                            'IDSWITCH': np.nan, 'ts16_dfv4p4_IMU_IDP': 0.0, 'cumu_IMU_IDP': 0.0}}} # hg: Hungarian, gd: greedy-matching
         # FN: misses of Phone Holders, TN: Others -> None
         self.scene_test_stats_path_to_save = self.checkpoint_path_dict[self.running_mode] + '/scene_test_stats.pkl'
         #  To de updated in prepare_testing_data()

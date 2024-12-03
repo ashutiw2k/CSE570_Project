@@ -783,10 +783,10 @@ def prepare_sync_training_data(C: Config):
             #     C.RGBg_ts16_dfv4_ls_path = C.seq_path_for_model + '/RGBh_ts16_dfv4_ls.json'
             # elif C.macro_scene == 'outdoor':
             #     C.RGBg_ts16_dfv4_ls_path = C.seq_path_for_model + '/RGB_ts16_dfv4_ls.json'
-            C.RGBg_ts16_dfv4_ls_path = C.seq_path_for_model + '/RGBg_ts16_dfv4_ls.json'
-            with open(C.RGBg_ts16_dfv4_ls_path, 'r') as f:
+            C.RGBg_ts16_dfv4p4_ls_path = C.seq_path_for_model + '/RGBg_ts16_dfv4_ls.json'
+            with open(C.RGBg_ts16_dfv4p4_ls_path, 'r') as f:
                 RGBg_ts16_dfv4_ls = json.load(f)
-                print(C.RGBg_ts16_dfv4_ls_path, 'loaded!')
+                print(C.RGBg_ts16_dfv4p4_ls_path, 'loaded!')
                 print('RGBg_ts16_dfv4_ls[:5]: ', RGBg_ts16_dfv4_ls[:5]) # verification
 
             # start_ts16_i = list(map(lambda i: i > ots26_to_ts16_dfv4(C.start_ots), C.RGB_ts16_dfv4_ls)).index(True)
@@ -1172,11 +1172,11 @@ def prepare_sync_testing_data(C: Config):
     # C.img_path = C.seq_path + '/' + C.img_type
     # if C.scene_id == 0: C.RGBg_ts16_dfv4_ls_path = C.seq_path_for_model + '/RGBh_ts16_dfv4_ls.json'
     # else: C.RGBg_ts16_dfv4_ls_path = C.seq_path_for_model + '/RGB_ts16_dfv4_ls.json'
-    C.RGBg_ts16_dfv4_ls_path = C.seq_path_for_model + '/RGBg_ts16_dfv4_ls.json'
-    print('C.RGBg_ts16_dfv4_ls_path: ', C.RGBg_ts16_dfv4_ls_path)
-    with open(C.RGBg_ts16_dfv4_ls_path, 'r') as f:
+    C.RGBg_ts16_dfv4p4_ls_path = C.seq_path_for_model + '/RGBg_ts16_dfv4_ls.json'
+    print('C.RGBg_ts16_dfv4_ls_path: ', C.RGBg_ts16_dfv4p4_ls_path)
+    with open(C.RGBg_ts16_dfv4p4_ls_path, 'r') as f:
         RGBg_ts16_dfv4_ls = json.load(f)
-        print(C.RGBg_ts16_dfv4_ls_path, 'loaded!')
+        print(C.RGBg_ts16_dfv4p4_ls_path, 'loaded!')
         print('C.RGBg_ts16_dfv4_ls[:5]: ', C.RGBg_ts16_dfv4_ls[:5]) # verification
 
     print('\n\n utils.py - prepare_testing_data()')
@@ -2213,12 +2213,12 @@ def eval_recon_core(C: Config, func_forward, model, test_seq_in_correspondence, 
     # if C.scene_id == 0: C.RGBg_ts16_dfv4_ls_path = C.seq_path_for_model + '/RGBh_ts16_dfv4_ls.json'
     # else: C.RGBg_ts16_dfv4_ls_path = C.seq_path_for_model + '/RGB_ts16_dfv.shape(BBX5_sync_dfv4)4_ls.json'
     # print('C.RGBg_ts16_dfv4_ls_path: ', C.RGBg_ts16_dfv4_ls_path)
-    C.RGBg_ts16_dfv4_ls_path = C.seq_path_for_model + '/RGBg_ts16_dfv4_ls.json'
-    print('C.RGBg_ts16_dfv4_ls_path: ', C.RGBg_ts16_dfv4_ls_path)
+    C.RGBg_ts16_dfv4p4_ls_path = C.seq_path_for_model + '/RGBg_ts16_dfv4_ls.json'
+    print('C.RGBg_ts16_dfv4_ls_path: ', C.RGBg_ts16_dfv4p4_ls_path)
 
-    with open(C.RGBg_ts16_dfv4_ls_path, 'r') as f:
+    with open(C.RGBg_ts16_dfv4p4_ls_path, 'r') as f:
         C.RGBg_ts16_dfv4_ls = json.load(f)
-        print(C.RGBg_ts16_dfv4_ls_path, 'loaded!')
+        print(C.RGBg_ts16_dfv4p4_ls_path, 'loaded!')
         print('C.RGBg_ts16_dfv4_ls[:5]: ', C.RGBg_ts16_dfv4_ls[:5]) # verification
     print('len(C.RGBg_ts16_dfv4_ls): ', len(C.RGBg_ts16_dfv4_ls))
     # e.g. 1816
