@@ -1,0 +1,51 @@
+[name: "/device:CPU:0"
+device_type: "CPU"
+memory_limit: 268435456
+locality {
+}
+incarnation: 16380848253947107353
+]
+[name: "/device:CPU:0"
+device_type: "CPU"
+memory_limit: 268435456
+locality {
+}
+incarnation: 3415845555731295533
+]
+[name: "/device:CPU:0"
+device_type: "CPU"
+memory_limit: 268435456
+locality {
+}
+incarnation: 9300781559124415632
+]
+Namespace(FTM_dist='eucl', average_turning_angle=45, baseline=False, batch_size=32, best_model=False, broken_trajectories=False, camera1_size=224, delta_BBX5_version=0, embed_exp_id=-1, eval_with_cumulative_turning_angle=False, first_frame_only=False, fps=10, hidden=72, imu200=False, imu_ned_pos2=False, investigate_exp_id=-1, investigate_vis_type='2D', iou_per_frame_thred=0.5, iou_threshold=0.5, kalman_filter_modality='C', kf_x_dim=3, kf_z_dim=3, learning_rate=0.001, len_win=30, load_train_exp_id_model=False, loss_func='MSE_xydwh', machine='asus', mask_features='', mask_out_of_view=False, minimum_required_frames=False, nan_fill='linear_interp', noise=False, noise_level=0.0, normalization=True, not_makedirs=False, number_of_mask_view=3, optimizer='Adam', plot_alpha=0.5, plot_slicing_steps=50, plot_xywhd='xw', pretrain_exp_id=-1, resume_training=False, root_path='None', running_mode='train', save_model_epoch_interval=50, scene_id=0, seed=-1, slicing_step=10, sm_filter=None, std=1.0, test_exp_id=-1, test_seq_id_idx=5, test_type='random', train_d_exp_id=-1, train_exp_id=-1, train_h_exp_id=-1, train_model_id='Xformer_IFcC2C', train_w_exp_id=-1, training_epochs=500, transformer_Tc_in='fstBBX5', ud__use_docker=True, vis=False, vis_PDR_BEV=False, vis_bbox_len=10, vis_bbox_type='PRED', vis_color_change='same', vis_eval=False, vis_text=False, vis_win_NED=False, visualize_cameras=False, weight_of_distance_list=[1, 1, 1, 0], win_stride=1)
+self.use_docker:  True
+self.model_id:  XT_test_idx_5
+
+
+self.seq_root_path:  /share/home/ashutosh/Course-Code/CSE570_Project/Data/datasets/RAN_All/RAN/seqs/indoor
+self.seq_root_path:  /share/home/ashutosh/Course-Code/CSE570_Project/Data/datasets/RAN_All/RAN/seqs/indoor
+self.seq4model_root_path:  /share/home/ashutosh/Course-Code/CSE570_Project/Data/datasets/RAN_All/RAN4model_dfv4.2/seqs/indoor/scene0
+glob.glob(self.seq4model_root_path:  ['/share/home/ashutosh/Course-Code/CSE570_Project/Data/datasets/RAN_All/RAN4model_dfv4.2/seqs/indoor/scene0/20201228_163656', '/share/home/ashutosh/Course-Code/CSE570_Project/Data/datasets/RAN_All/RAN4model_dfv4.2/seqs/indoor/scene0/20201223_141923', '/share/home/ashutosh/Course-Code/CSE570_Project/Data/datasets/RAN_All/RAN4model_dfv4.2/seqs/indoor/scene0/20201223_141456', '/share/home/ashutosh/Course-Code/CSE570_Project/Data/datasets/RAN_All/RAN4model_dfv4.2/seqs/indoor/scene0/20201228_164427', '/share/home/ashutosh/Course-Code/CSE570_Project/Data/datasets/RAN_All/RAN4model_dfv4.2/seqs/indoor/scene0/20201229_161359', '/share/home/ashutosh/Course-Code/CSE570_Project/Data/datasets/RAN_All/RAN4model_dfv4.2/seqs/indoor/scene0/20201228_164843', '/share/home/ashutosh/Course-Code/CSE570_Project/Data/datasets/RAN_All/RAN4model_dfv4.2/seqs/indoor/scene0/20201223_142404', '/share/home/ashutosh/Course-Code/CSE570_Project/Data/datasets/RAN_All/RAN4model_dfv4.2/seqs/indoor/scene0/20201228_165257', '/share/home/ashutosh/Course-Code/CSE570_Project/Data/datasets/RAN_All/RAN4model_dfv4.2/seqs/indoor/scene0/20201223_142830', '/share/home/ashutosh/Course-Code/CSE570_Project/Data/datasets/RAN_All/RAN4model_dfv4.2/seqs/indoor/scene0/20201228_165713', '/share/home/ashutosh/Course-Code/CSE570_Project/Data/datasets/RAN_All/RAN4model_dfv4.2/seqs/indoor/scene0/20201229_155701', '/share/home/ashutosh/Course-Code/CSE570_Project/Data/datasets/RAN_All/RAN4model_dfv4.2/seqs/indoor/scene0/20201229_162235', '/share/home/ashutosh/Course-Code/CSE570_Project/Data/datasets/RAN_All/RAN4model_dfv4.2/seqs/indoor/scene0/20201223_140951', '/share/home/ashutosh/Course-Code/CSE570_Project/Data/datasets/RAN_All/RAN4model_dfv4.2/seqs/indoor/scene0/20201229_160934', '/share/home/ashutosh/Course-Code/CSE570_Project/Data/datasets/RAN_All/RAN4model_dfv4.2/seqs/indoor/scene0/20201229_161805']
+
+
+self.seq_id_path_ls:  ['/share/home/ashutosh/Course-Code/CSE570_Project/Data/datasets/RAN_All/RAN4model_dfv4.2/seqs/indoor/scene0/20201223_140951', '/share/home/ashutosh/Course-Code/CSE570_Project/Data/datasets/RAN_All/RAN4model_dfv4.2/seqs/indoor/scene0/20201223_141456', '/share/home/ashutosh/Course-Code/CSE570_Project/Data/datasets/RAN_All/RAN4model_dfv4.2/seqs/indoor/scene0/20201223_141923', '/share/home/ashutosh/Course-Code/CSE570_Project/Data/datasets/RAN_All/RAN4model_dfv4.2/seqs/indoor/scene0/20201223_142404', '/share/home/ashutosh/Course-Code/CSE570_Project/Data/datasets/RAN_All/RAN4model_dfv4.2/seqs/indoor/scene0/20201223_142830', '/share/home/ashutosh/Course-Code/CSE570_Project/Data/datasets/RAN_All/RAN4model_dfv4.2/seqs/indoor/scene0/20201228_163656', '/share/home/ashutosh/Course-Code/CSE570_Project/Data/datasets/RAN_All/RAN4model_dfv4.2/seqs/indoor/scene0/20201228_164427', '/share/home/ashutosh/Course-Code/CSE570_Project/Data/datasets/RAN_All/RAN4model_dfv4.2/seqs/indoor/scene0/20201228_164843', '/share/home/ashutosh/Course-Code/CSE570_Project/Data/datasets/RAN_All/RAN4model_dfv4.2/seqs/indoor/scene0/20201228_165257', '/share/home/ashutosh/Course-Code/CSE570_Project/Data/datasets/RAN_All/RAN4model_dfv4.2/seqs/indoor/scene0/20201228_165713', '/share/home/ashutosh/Course-Code/CSE570_Project/Data/datasets/RAN_All/RAN4model_dfv4.2/seqs/indoor/scene0/20201229_155701', '/share/home/ashutosh/Course-Code/CSE570_Project/Data/datasets/RAN_All/RAN4model_dfv4.2/seqs/indoor/scene0/20201229_160934', '/share/home/ashutosh/Course-Code/CSE570_Project/Data/datasets/RAN_All/RAN4model_dfv4.2/seqs/indoor/scene0/20201229_161359', '/share/home/ashutosh/Course-Code/CSE570_Project/Data/datasets/RAN_All/RAN4model_dfv4.2/seqs/indoor/scene0/20201229_161805', '/share/home/ashutosh/Course-Code/CSE570_Project/Data/datasets/RAN_All/RAN4model_dfv4.2/seqs/indoor/scene0/20201229_162235']
+
+
+self.seq_id_ls:  ['20201223_140951', '20201223_141456', '20201223_141923', '20201223_142404', '20201223_142830', '20201228_163656', '20201228_164427', '20201228_164843', '20201228_165257', '20201228_165713', '20201229_155701', '20201229_160934', '20201229_161359', '20201229_161805', '20201229_162235']
+
+
+self.seq_id_path_ls:  ['/share/home/ashutosh/Course-Code/CSE570_Project/Data/datasets/RAN_All/RAN4model_dfv4.2/seqs/indoor/scene0/20201223_140951', '/share/home/ashutosh/Course-Code/CSE570_Project/Data/datasets/RAN_All/RAN4model_dfv4.2/seqs/indoor/scene0/20201223_141456', '/share/home/ashutosh/Course-Code/CSE570_Project/Data/datasets/RAN_All/RAN4model_dfv4.2/seqs/indoor/scene0/20201223_141923', '/share/home/ashutosh/Course-Code/CSE570_Project/Data/datasets/RAN_All/RAN4model_dfv4.2/seqs/indoor/scene0/20201223_142404', '/share/home/ashutosh/Course-Code/CSE570_Project/Data/datasets/RAN_All/RAN4model_dfv4.2/seqs/indoor/scene0/20201223_142830', '/share/home/ashutosh/Course-Code/CSE570_Project/Data/datasets/RAN_All/RAN4model_dfv4.2/seqs/indoor/scene0/20201228_163656', '/share/home/ashutosh/Course-Code/CSE570_Project/Data/datasets/RAN_All/RAN4model_dfv4.2/seqs/indoor/scene0/20201228_164427', '/share/home/ashutosh/Course-Code/CSE570_Project/Data/datasets/RAN_All/RAN4model_dfv4.2/seqs/indoor/scene0/20201228_164843', '/share/home/ashutosh/Course-Code/CSE570_Project/Data/datasets/RAN_All/RAN4model_dfv4.2/seqs/indoor/scene0/20201228_165257', '/share/home/ashutosh/Course-Code/CSE570_Project/Data/datasets/RAN_All/RAN4model_dfv4.2/seqs/indoor/scene0/20201228_165713', '/share/home/ashutosh/Course-Code/CSE570_Project/Data/datasets/RAN_All/RAN4model_dfv4.2/seqs/indoor/scene0/20201229_155701', '/share/home/ashutosh/Course-Code/CSE570_Project/Data/datasets/RAN_All/RAN4model_dfv4.2/seqs/indoor/scene0/20201229_160934', '/share/home/ashutosh/Course-Code/CSE570_Project/Data/datasets/RAN_All/RAN4model_dfv4.2/seqs/indoor/scene0/20201229_161359', '/share/home/ashutosh/Course-Code/CSE570_Project/Data/datasets/RAN_All/RAN4model_dfv4.2/seqs/indoor/scene0/20201229_161805', '/share/home/ashutosh/Course-Code/CSE570_Project/Data/datasets/RAN_All/RAN4model_dfv4.2/seqs/indoor/scene0/20201229_162235']
+self,seq_id_ls:  ['20201223_140951', '20201223_141456', '20201223_141923', '20201223_142404', '20201223_142830', '20201228_163656', '20201228_164427', '20201228_164843', '20201228_165257', '20201228_165713', '20201229_155701', '20201229_160934', '20201229_161359', '20201229_161805', '20201229_162235']
+len(self,seq_id_ls):  15
+
+
+self.n_subjects:  5
+/share/home/ashutosh/Course-Code/CSE570_Project/Data/datasets/RAN_All/RAN4model_dfv4.2/seqs/indoor/scene0/20201223_140951/RGBg_ts16_dfv4p4_ls.json loaded!
+/share/home/ashutosh/Course-Code/CSE570_Project/Data/datasets/RAN_All/RAN4model_dfv4.2/exps/exp1/start_end_ts16_dfv4p4_indoor.json loaded!
+self.IMU19_dim:  19
+self.IMU_XT_dim:  9
+
+
+ self.checkpoint_path_dict[self.running_mode]: /share/home/ashutosh/Course-Code/CSE570_Project/Data/checkpoints/XT/scene0/XT_test_idx_5/train/exps/0
