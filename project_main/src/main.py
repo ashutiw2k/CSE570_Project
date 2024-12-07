@@ -1,7 +1,7 @@
 # src/main.py
 import os
 import json
-from preprocess import mask_half_frame
+from CSE570_Project.project_main.src.image_masking import mask_half_frame
 from object_detection import YOLODetector
 
 if __name__ == "__main__":
