@@ -1,0 +1,21 @@
+New Idea
+
+
+
+The original idea was that if we have a person in our camera frame, we track him using any kind of vision model or transformers. But we want we want to track that guy when he is not in the camera frame. The way I want to accomplish that is using IMU and WiFI readings. So I want to track the person in frame using camera and then off-frame using these sensor readings.
+
+So we want to make our model like Shubham’s original idea. We will use our camera angle and divide each frame into two halves. One part will be masked (half of it) and one part will not be. We are going to track our subject (person) throughout the entire video frame. We want to track the subject even through the masked part of the frame.
+
+We will achieve that by training our model based on WiFi and IMU measurements along with boundary boxes from YOLO on our frames.
+
+
+We will divide our tasks into two parts. For both parts, we will train two transformers. In the first part we will train a vision transformer (ViT) (or any other similar transformer for vision) on the boundary boxes. We will use the YOLOv5 algorithm to create boundary boxes for the entire frame and detect those boundary boxes for all the sequences of all the frames.
+
+In the second part, we will first implement masking of the frames as mentioned before. Then using the sensor inputs from WiFi and the IMU measurements. We will train a transformer for these sensor inputs and use the previously trained vision transformer outputs (boundary boxes) as ground truth. Using masking we plan to implement this idea. To train this model on the complete dataset, we will alternate the masking on successive frames (or the other idea we talked about). Now using this method, we effectively increase our data. Then we train using this method using both inputs from the YOLO and the sensors.
+
+
+One more thing is that, while training the second model, we want to test it simultaneously. What I mean by that is, that we train the model on the visible part (which has boundary boxes as ground truths) right, and we simultaneously test it on the masked part. Initially, the accuracy will be shit (I know that). But once we run through the entire video (all sequences), then we should have a completely trained model that can identify (track) where the person is using only the IMU and WiFi measurements.
+
+We test train and test it on 80% of the total sequences we have. We then use the remaining 20% of the sequences as prediction dataset. At that point, theoretically, it shouldn’t matter if the video is completely masked or partially masked. The model should be able to track our subject using only the sensor readings.
+
+At this point, we should have enough to present. Then we can scale this for our report.
