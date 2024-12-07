@@ -26,9 +26,15 @@ COCO_CLASSES = [
 ]
 
 def rescale_bboxes(out_bbox, size):
-    # Convert the normalized box coordinates [0,1] to pixel coordinates
     img_w, img_h = size
-    b = out_bbox * torch.tensor([img_w, img_h, img_w, img_h], dtype=torch.float32).to(device)
+    # Convert (cx, cy, w, h) to (xmin, ymin, xmax, ymax)
+    b = out_bbox.clone().to(device)
+    b[:, 0] = out_bbox[:, 0] - 0.5 * out_bbox[:, 2]  # xmin
+    b[:, 1] = out_bbox[:, 1] - 0.5 * out_bbox[:, 3]  # ymin
+    b[:, 2] = out_bbox[:, 0] + 0.5 * out_bbox[:, 2]  # xmax
+    b[:, 3] = out_bbox[:, 1] + 0.5 * out_bbox[:, 3]  # ymax
+    # Scale to image size
+    b = b * torch.tensor([img_w, img_h, img_w, img_h], dtype=torch.float32).to(device)
     return b
 
 
@@ -58,7 +64,7 @@ def detect_and_save(image_path, output_path, threshold=0.7):
             keep = person_probs > threshold  # Filter based on threshold
 
             # Get the bounding boxes and probabilities for people
-            boxes = rescale_bboxes(pred_boxes[keep], img.size)
+            boxes = rescale_bboxes(pred_boxes[keep], img.size).to('cpu')
             person_probs_filtered = probs[keep]
 
             plot_and_save(img, probs[keep], boxes, os.path.join(output_path, fname))
