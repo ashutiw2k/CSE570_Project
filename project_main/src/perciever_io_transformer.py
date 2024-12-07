@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from transformers import PerceiverConfig, PerceiverModel
+import json
+import numpy as np
 
 # Configuration
 BATCH_SIZE = 16
@@ -13,6 +15,14 @@ EPOCHS = 10
 LEARNING_RATE = 1e-4
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+
+# Datat needs to be processed first to sync vision and sensor inputs
+
+# Paths to Data
+IMU_WIFI_DATA_PATH = "path/to/imu_wifi_data.json"  # Replace with your IMU/WiFi data path
+VISION_LABELS_PATH = "path/to/vision_labels.json"  # Replace with your vision labels path
+GROUND_TRUTH_PATH = "path/to/ground_truth_boxes.json"  # Replace with your ground truth path
+
 # Perceiver IO Configuration
 config = PerceiverConfig(
     input_dim=LATENT_DIM,  # Dimension of input embeddings
@@ -21,10 +31,6 @@ config = PerceiverConfig(
     output_dim=LATENT_DIM  # Dimension of output embeddings
 )
 model = PerceiverModel(config).to(DEVICE)
-
-
-# Data needs to be processed first to sync vision and sensor inputs
-# Data paths need to be added
 
 # Embedding Layers
 imu_wifi_embedding = nn.Linear(FEATURE_DIM, LATENT_DIM).to(DEVICE)
@@ -35,11 +41,28 @@ regression_head = nn.Linear(LATENT_DIM, 4).to(DEVICE)  # Predict [xmin, ymin, xm
 loss_fn = nn.SmoothL1Loss()
 optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
 
-# Dummy Data Generator (Replace with your actual data)
-def generate_dummy_data(batch_size, sequence_length, feature_dim, num_boxes):
-    imu_wifi_data = torch.rand(batch_size, sequence_length, feature_dim)  # IMU + WiFi
-    vision_labels = torch.rand(batch_size, num_boxes, 4)  # Bounding boxes [xmin, ymin, xmax, ymax]
-    ground_truth_boxes = torch.rand(batch_size, num_boxes, 4)  # Target bounding boxes
+# Load Data
+def load_data():
+    """
+    Loads IMU/WiFi data, vision labels, and ground truth bounding boxes.
+
+    Returns:
+        tuple: IMU/WiFi data, vision labels, ground truth boxes.
+    """
+    with open(IMU_WIFI_DATA_PATH, 'r') as f:
+        imu_wifi_data = json.load(f)  # Shape: [batch_size, sequence_length, feature_dim]
+    
+    with open(VISION_LABELS_PATH, 'r') as f:
+        vision_labels = json.load(f)  # Shape: [batch_size, num_boxes, 4]
+
+    with open(GROUND_TRUTH_PATH, 'r') as f:
+        ground_truth_boxes = json.load(f)  # Shape: [batch_size, num_boxes, 4]
+
+    # Convert to PyTorch tensors
+    imu_wifi_data = torch.tensor(imu_wifi_data, dtype=torch.float32)
+    vision_labels = torch.tensor(vision_labels, dtype=torch.float32)
+    ground_truth_boxes = torch.tensor(ground_truth_boxes, dtype=torch.float32)
+
     return imu_wifi_data, vision_labels, ground_truth_boxes
 
 # Training Loop
@@ -48,14 +71,14 @@ for epoch in range(EPOCHS):
     total_loss = 0.0
 
     for _ in range(100):  # Number of batches (example)
-        # Generate dummy data
-        imu_wifi_data, vision_labels, ground_truth_boxes = generate_dummy_data(
-            BATCH_SIZE, SEQUENCE_LENGTH, FEATURE_DIM, NUM_BOXES
-        )
+        # Load actual data
+        imu_wifi_data, vision_labels, ground_truth_boxes = load_data()
+        
+        # Ensure data is of proper batch size
         imu_wifi_data, vision_labels, ground_truth_boxes = (
-            imu_wifi_data.to(DEVICE),
-            vision_labels.to(DEVICE),
-            ground_truth_boxes.to(DEVICE),
+            imu_wifi_data[:BATCH_SIZE].to(DEVICE),
+            vision_labels[:BATCH_SIZE].to(DEVICE),
+            ground_truth_boxes[:BATCH_SIZE].to(DEVICE),
         )
 
         # Embed inputs
