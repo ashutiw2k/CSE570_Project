@@ -15,3 +15,7 @@ docker run -d --ipc=host --shm-size=16384m -it -v /path/to/proj:/path/to/proj --
 - This file contains the method `get__scene0_synced_dataloaders()` to get dataloaders for the sequence `scene0/20201223_140951/`. 
 - Use the function `get_scene0_synced_datasets()` to get the individual Datasets themselves
 - Make sure the `DATA_ROOT` constant in this file points to your **Bo's Synced Data Folder** (i.e the `RAN4model_dfv4p4` folder)
+
+
+
+pip install torch torchvision matplotlib Pillow
