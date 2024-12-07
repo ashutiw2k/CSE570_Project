@@ -72,7 +72,38 @@ def load_data_from_path(path:str, file_type:Literal['pickle','json']='pickle'):
     data = np.array(data)
     return data.reshape((data.shape[0], data.shape[1], data.shape[3]))
 
-def get_synced_dataloaders(batch_size=4,shuffle=True, num_workers=0):
+def get_scene0_synced_datasets():
+    '''
+    Dataset at index 'i' corresponds to subject 'i'
+    '''
+    bbx5h_data = load_data_from_path(DATA_ROOT + '/' + SCENE0_BBX5H_SYNC_PATH)
+    bbxc3h_data = load_data_from_path(DATA_ROOT + '/' + SCENE0_BBXC3H_SYNC_PATH)
+    ftm_li_data = load_data_from_path(DATA_ROOT + '/' + SCENE0_FTM_LI_SYNC_PATH)
+    ftm_data = load_data_from_path(DATA_ROOT + '/' + SCENE0_FTM_SYNC_PATH)
+    imu19_data = load_data_from_path(DATA_ROOT + '/' + SCENE0_IMU_19_SYNC_PATH)
+    imuagm9_data = load_data_from_path(DATA_ROOT + '/' + SCENE0_IMU_AGM9_SYNC_PATH)
+    imugq10_data = load_data_from_path(DATA_ROOT + '/' + SCENE0_IMU_GQ10_SYNC_PATH)
+    imugqm13_data = load_data_from_path(DATA_ROOT + '/' + SCENE0_IMU_GQM13_SYNC_PATH)
+    rssi_li_data = load_data_from_path(DATA_ROOT + '/' + SCENE0_RSSI_LI_SYNC_PATH)
+    rssi_data = load_data_from_path(DATA_ROOT + '/' + SCENE0_RSSI_SYNC_PATH)
+
+    # print(bbx5h_data.shape, bbxc3h_data.shape, ftm_data.shape, ftm_li_data.shape, \
+    #       imu19_data.shape, imuagm9_data.shape, imugq10_data.shape, imugqm13_data.shape, \
+    #         rssi_data.shape, rssi_li_data.shape, sep=', ')
+
+    dataset_list = []
+    for i in range(bbx5h_data.shape[1]):
+        sub_dataset = SyncedDataSet(
+            bbx5h=bbx5h_data[:,i,:], bbxc3h=bbxc3h_data[:,i,:], \
+            ftm=ftm_data[:,i,:], ftm_li=ftm_li_data[:,i,:], \
+            imu19=imu19_data[:,i,:], imuagm9=imuagm9_data[:,i,:], imugq10=imugq10_data[:,i,:], imugqm13=imugqm13_data[:,i,:], \
+            rssi=rssi_data[:,i,:], rssi_li=rssi_li_data[:,i,:]
+        )
+        dataset_list.append(sub_dataset)
+    
+    return dataset_list
+
+def get_scene0_synced_dataloaders(batch_size=4,shuffle=True, num_workers=0):
     '''
     Dataloader at index [i] corresponds to subject [i]
     '''
@@ -105,9 +136,6 @@ def get_synced_dataloaders(batch_size=4,shuffle=True, num_workers=0):
     return dataloader_list
 
 
-
-
-
 if __name__ == '__main__':
     # print(load_data_from_path(SCENE0_BBX5H_SYNC_PATH).shape)
     data = load_data_from_path(DATA_ROOT + '/' + SCENE0_BBX5H_SYNC_PATH)
@@ -126,10 +154,12 @@ if __name__ == '__main__':
     except:
         print('Not same shape test failed')
 
-    dataloaders = get_synced_dataloaders(batch_size=1)
+    dataloaders = get_scene0_synced_dataloaders(batch_size=1)
     
     for dataloader in dataloaders:
         print(len(dataloader))
+
+    # print(dataloader)
     
     
 
