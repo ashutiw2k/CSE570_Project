@@ -22,25 +22,25 @@ transform = T.Compose([
 
 # Here exists the classes for which we need to detect. I am keeping only person in it for now. 
 COCO_CLASSES = [
-    'person']
-
+    'N/A', 'person'
+]
 
 def rescale_bboxes(out_bbox, size):
     # Convert the normalized box coordinates [0,1] to pixel coordinates
     img_w, img_h = size
-    b = out_bbox * torch.tensor([img_w, img_h, img_w, img_h], dtype=torch.float32)
+    b = out_bbox * torch.tensor([img_w, img_h, img_w, img_h], dtype=torch.float32).to(device)
     return b
 
 
 def detect_and_save(image_path, output_path, threshold=0.7):
     
-    for fname in os.listdir(input_image_path):
+    for fname in os.listdir(image_path):
         if fname.lower().endswith(('.png', '.jpg', '.jpeg')):
-            frame_path = os.path.join(input_image_path, fname)
-            img = cv2.imread(frame_path)
+            frame_path = os.path.join(image_path, fname)
+            # img = cv2.imread(frame_path)
 
             # Load and preprocess the image
-            img = Image.open(image_path).convert('RGB')
+            img = Image.open(frame_path).convert('RGB')
             img_transformed = transform(img).unsqueeze(0).to(device)
 
             with torch.no_grad():
@@ -54,8 +54,8 @@ def detect_and_save(image_path, output_path, threshold=0.7):
 
             # Filter based on threshold
             keep = probs.max(dim=-1).values > threshold
-            boxes = rescale_bboxes(pred_boxes[keep], img.size)
-            plot_and_save(img, probs[keep], boxes, output_path)
+            boxes = rescale_bboxes(pred_boxes[keep], img.size).to('cpu')
+            plot_and_save(img, probs[keep], boxes, os.path.join(output_path, fname))
 
 
 def plot_and_save(pil_img, prob, boxes, output_path):
@@ -67,6 +67,9 @@ def plot_and_save(pil_img, prob, boxes, output_path):
         ax.add_patch(plt.Rectangle((xmin, ymin), xmax - xmin, ymax - ymin,
                                    fill=False, color='blue', linewidth=3))
         cls = p.argmax()
+        # print(cls)
+        # print(len(p))
+        # print(len(COCO_CLASSES))
         text = f"{COCO_CLASSES[cls]}: {p[cls]:0.2f}"
         ax.text(xmin, ymin, text, fontsize=15,
                 bbox=dict(facecolor='yellow', alpha=0.5))
@@ -79,8 +82,8 @@ def plot_and_save(pil_img, prob, boxes, output_path):
 
 
 
-input_image_path = '../data/Video Frames'
-output_image_path = '../data/Annotated Frames'
+input_image_path = '20201223_140951-005/RGB_anonymized/'
+output_image_path = 'project_main/data/Annotated Images/'
 
 
 detect_and_save(input_image_path, output_image_path, threshold=0.7)
