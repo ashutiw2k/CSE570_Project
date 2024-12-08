@@ -39,7 +39,7 @@ config = PerceiverConfig(
 model = PerceiverModel(config).to(DEVICE)
 
 # Embedding Layers
-sensor_embedding = nn.Linear(12, LATENT_DIM).to(DEVICE)  # Map sensor features to latent dimension
+sensor_embedding = nn.Linear(1, LATENT_DIM).to(DEVICE)  # Corrected: Map each feature scalar to latent dimension
 feature_type_embedding = nn.Embedding(NUM_FEATURE_TYPES, LATENT_DIM).to(DEVICE)  # Learnable embeddings for feature types
 bbox_embedding = nn.Linear(4, LATENT_DIM).to(DEVICE)  # Bounding box [xmin, ymin, xmax, ymax]
 regression_head = nn.Linear(LATENT_DIM, 4).to(DEVICE)  # Predict bounding boxes
@@ -67,11 +67,14 @@ def embed_features(sensor_features):
     # Get feature-type embeddings
     type_embeddings = feature_type_embedding(feature_type_indices)  # [batch_size, num_features, LATENT_DIM]
 
-    # Pass raw sensor features through a linear layer to match LATENT_DIM
+    # Reshape sensor_features to [batch_size, num_features, 1] for linear layer
+    sensor_features = sensor_features.unsqueeze(-1)  # [batch_size, num_features, 1]
+
+    # Pass each feature through the linear layer to get raw embeddings
     raw_embeddings = sensor_embedding(sensor_features)  # [batch_size, num_features, LATENT_DIM]
 
     # Add feature-type embeddings to raw embeddings
-    return raw_embeddings + type_embeddings
+    return raw_embeddings + type_embeddings  # [batch_size, num_features, LATENT_DIM]
 
 # Load and Process Data
 def load_data(input_path):
@@ -114,25 +117,24 @@ def train_and_test_model(left_sensors, left_bboxes, right_sensors, right_bboxes)
             test_sensors, test_bboxes = left_sensors, left_bboxes
 
         # Batch training with tqdm progress bar
-        # Adjust Concatenation
         for i in tqdm(range(0, len(train_sensors), BATCH_SIZE), desc=f"Training Epoch {epoch + 1}"):
-            batch_sensors = train_sensors[i:i + BATCH_SIZE].to(DEVICE)
-            batch_bboxes = train_bboxes[i:i + BATCH_SIZE].to(DEVICE)
+            batch_sensors = train_sensors[i:i + BATCH_SIZE].to(DEVICE)  # [BATCH_SIZE, 12]
+            batch_bboxes = train_bboxes[i:i + BATCH_SIZE].to(DEVICE)  # [BATCH_SIZE, 4]
 
             # Embed features with feature-type embeddings
-            sensor_embedded = embed_features(batch_sensors)  # [BATCH_SIZE, num_features, LATENT_DIM]
-            bbox_embedded = bbox_embedding(batch_bboxes)  # [BATCH_SIZE, num_boxes, LATENT_DIM]
+            sensor_embedded = embed_features(batch_sensors)  # [BATCH_SIZE, 12, 256]
+            bbox_embedded = bbox_embedding(batch_bboxes)  # [BATCH_SIZE, 256]
 
             # Reshape sensor_embedded to match the vision sequence size
             # Example: Expand sensor embeddings to match the sequence length of bbox embeddings
-            sensor_embedded = sensor_embedded.unsqueeze(1).expand(-1, bbox_embedded.size(1), -1)  # [BATCH_SIZE, num_boxes, LATENT_DIM]
-
-            # Concatenate embeddings along the sequence (temporal) dimension
-            multimodal_input = torch.cat([sensor_embedded, bbox_embedded], dim=1)  # [BATCH_SIZE, total_sequence_length, LATENT_DIM]
+            # Assuming bbox_embedded should have a sequence dimension, adjust if necessary
+            # Here, we'll treat bbox as part of the sequence
+            bbox_embedded = bbox_embedded.unsqueeze(1)  # [BATCH_SIZE, 1, 256]
+            multimodal_input = torch.cat([sensor_embedded, bbox_embedded], dim=1)  # [BATCH_SIZE, 13, 256]
 
             # Forward pass
             outputs = model(inputs=multimodal_input)
-            predicted_boxes = regression_head(outputs.last_hidden_state[:, :batch_bboxes.size(1), :])
+            predicted_boxes = regression_head(outputs.last_hidden_state[:, :1, :])  # Adjust as needed
 
             # Compute loss
             loss = loss_fn(predicted_boxes, batch_bboxes)
@@ -142,7 +144,6 @@ def train_and_test_model(left_sensors, left_bboxes, right_sensors, right_bboxes)
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-
 
         print(f"Epoch {epoch + 1}/{EPOCHS}, Training Loss: {total_loss:.4f}")
 
@@ -161,18 +162,17 @@ def test_model(test_sensors, test_bboxes):
             batch_bboxes = test_bboxes[i:i + BATCH_SIZE].to(DEVICE)
 
             # Embed features with feature-type embeddings
-            sensor_embedded = embed_features(batch_sensors)
+            sensor_embedded = embed_features(batch_sensors)  # [BATCH_SIZE, 12, 256]
 
             # Forward pass
-            outputs = model(inputs=sensor_embedded)
-            predicted_boxes = regression_head(outputs.last_hidden_state)
+            outputs = model(inputs=sensor_embedded)  # Adjust if model expects a different input shape
+            predicted_boxes = regression_head(outputs.last_hidden_state)  # [BATCH_SIZE, sequence_length, 4]
 
             # Compute loss
             loss = loss_fn(predicted_boxes, batch_bboxes)
             total_loss += loss.item()
 
     return total_loss / len(test_sensors)
-
 
 # Main Execution
 if __name__ == "__main__":
