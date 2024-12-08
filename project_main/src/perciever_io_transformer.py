@@ -7,22 +7,22 @@ from tqdm import tqdm
 
 # Configuration
 BATCH_SIZE = 16
-LATENT_DIM = 256  # Set to 256 or 768 based on your choice
+LATENT_DIM = 256  # Ensure this matches d_model
 EPOCHS = 10
 LEARNING_RATE = 1e-4
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Paths to data files
-TRANSFORMER_ALL_SUBJECTS= 'project_main/data/Transformer Input/Subject0'
+TRANSFORMER_ALL_SUBJECTS = 'project_main/data/Transformer Input/Subject0'
 
 # Load sensor inputs and bounding box labels
-INPUT_DATA_PATH = TRANSFORMER_ALL_SUBJECTS + '/' + "transformer_input.json"  # Output
+INPUT_DATA_PATH = os.path.join(TRANSFORMER_ALL_SUBJECTS, "transformer_input.json")  # Output
 
 # Define Feature Types
 FEATURE_TYPES = [
     "Accel_x", "Accel_y", "Accel_z",  # IMU Accelerometer
     "Gyro_x", "Gyro_y", "Gyro_z",  # IMU Gyroscope
-    "Mag_x", "Mag_y", "Mag_z",  # IMU Magnetometer
+    "Mag_x", "Mag_y", "Mag_z",      # IMU Magnetometer
     "WiFi_ftm1", "WiFi_ftm2", "WiFi_rssi"  # WiFi features
 ]
 
@@ -31,11 +31,11 @@ NUM_FEATURE_TYPES = len(FEATURE_TYPES)
 
 # Perceiver IO Configuration
 config = PerceiverConfig(
-    input_dim=LATENT_DIM,  # Dimension of input embeddings
-    num_latents=512,  # Number of latent vectors
-    d_latents=LATENT_DIM,  # Latent dimension
-    output_dim=LATENT_DIM,  # Dimension of output embeddings
-    d_model=LATENT_DIM
+    input_dim=LATENT_DIM,       # Dimension of input embeddings
+    num_latents=512,            # Number of latent vectors
+    d_latents=LATENT_DIM,       # Latent dimension
+    output_dim=LATENT_DIM,      # Dimension of output embeddings
+    d_model=LATENT_DIM          # Ensure d_model matches LATENT_DIM
 )
 model = PerceiverModel(config).to(DEVICE)
 
@@ -46,7 +46,7 @@ bbox_embedding = nn.Linear(4, LATENT_DIM).to(DEVICE)  # Bounding box [xmin, ymin
 regression_head = nn.Linear(LATENT_DIM, 4).to(DEVICE)  # Predict bounding boxes
 
 # Loss and Optimizer
-loss_fn = nn.CrossEntropyLoss()
+loss_fn = nn.SmoothL1Loss()  # Ensure using regression loss
 optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
 
 # Add Feature-Type Embeddings to Sensor Features
@@ -124,13 +124,16 @@ def train_and_test_model(left_sensors, left_bboxes, right_sensors, right_bboxes)
 
             # Embed features with feature-type embeddings
             sensor_embedded = embed_features(batch_sensors)  # [BATCH_SIZE, 12, 256]
-            bbox_embedded = bbox_embedding(batch_bboxes)  # [BATCH_SIZE, 256]
+            bbox_embedded = bbox_embedding(batch_bboxes)      # [BATCH_SIZE, 256]
 
-            # Reshape sensor_embedded to match the vision sequence size
-            # Here, we'll treat bbox as part of the sequence
-            bbox_embedded = torch.flatten(bbox_embedded.unsqueeze(1), 2)  # [BATCH_SIZE, 1, 256]
+            # Reshape bbox_embedded to [BATCH_SIZE, 1, 256]
+            bbox_embedded = bbox_embedded.unsqueeze(1)        # [BATCH_SIZE, 1, 256]
+
+            # Concatenate sensor and bbox embeddings along the sequence dimension
             multimodal_input = torch.cat([sensor_embedded, bbox_embedded], dim=1)  # [BATCH_SIZE, 13, 256]
+            # Debug statement (can be removed in production)
             # print(f'multimodal input shape: ', multimodal_input.shape)
+
             # Forward pass
             outputs = model(inputs=multimodal_input)
             predicted_boxes = regression_head(outputs.last_hidden_state[:, :1, :])  # [BATCH_SIZE, 1, 4]
