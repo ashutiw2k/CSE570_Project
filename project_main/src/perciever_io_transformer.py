@@ -46,7 +46,7 @@ bbox_embedding = nn.Linear(4, LATENT_DIM).to(DEVICE)  # Bounding box [xmin, ymin
 regression_head = nn.Linear(LATENT_DIM, 4).to(DEVICE)  # Predict bounding boxes
 
 # Loss and Optimizer
-loss_fn = nn.SmoothL1Loss()
+loss_fn = nn.MSELoss()
 optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
 
 # Add Feature-Type Embeddings to Sensor Features
