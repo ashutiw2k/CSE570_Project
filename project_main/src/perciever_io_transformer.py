@@ -129,9 +129,11 @@ def train_and_test_model(left_sensors, left_bboxes, right_sensors, right_bboxes)
             # Example: Expand sensor embeddings to match the sequence length of bbox embeddings
             # Assuming bbox_embedded should have a sequence dimension, adjust if necessary
             # Here, we'll treat bbox as part of the sequence
-            bbox_embedded = bbox_embedded.unsqueeze(1)  # [BATCH_SIZE, 1, 256]
+            bbox_embedded = torch.flatten(bbox_embedded.unsqueeze(1), 2)  # [BATCH_SIZE, 1, 256]
+            # print(bbox_embedded.shape)
+            # print(sensor_embedded.shape)
             multimodal_input = torch.cat([sensor_embedded, bbox_embedded], dim=1)  # [BATCH_SIZE, 13, 256]
-
+            print(f'multimodal input shape: ', multimodal_input.shape)
             # Forward pass
             outputs = model(inputs=multimodal_input)
             predicted_boxes = regression_head(outputs.last_hidden_state[:, :1, :])  # Adjust as needed
