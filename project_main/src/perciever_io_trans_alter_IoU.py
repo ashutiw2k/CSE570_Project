@@ -113,6 +113,8 @@ def calculate_iou(pred_boxes, true_boxes):
         torch.Tensor: IoU scores [batch_size].
     """
     # Calculate coordinates of intersection rectangles
+    # print(pred_boxes.shape)
+    # print(true_boxes.shape)
     inter_xmin = torch.max(pred_boxes[:, 0], true_boxes[:, 0])
     inter_ymin = torch.max(pred_boxes[:, 1], true_boxes[:, 1])
     inter_xmax = torch.min(pred_boxes[:, 2], true_boxes[:, 2])
@@ -170,7 +172,7 @@ def test_model(test_sensors, test_bboxes, test_side_flags, model, sensor_embeddi
             bbox_embedded = bbox_embedding(batch_bboxes)      # [BATCH_SIZE, LATENT_DIM]
 
             # Reshape bbox_embedded to [BATCH_SIZE, 1, LATENT_DIM]
-            bbox_embedded = bbox_embedded.unsqueeze(1)        # [BATCH_SIZE, 1, LATENT_DIM]
+            bbox_embedded = torch.flatten(bbox_embedded.unsqueeze(1), 2)        # [BATCH_SIZE, 1, LATENT_DIM]
 
             # Concatenate sensor and bbox embeddings along the sequence dimension
             multimodal_input = torch.cat([sensor_embedded, bbox_embedded], dim=1)  # [BATCH_SIZE, num_features + 2, LATENT_DIM]
@@ -185,7 +187,7 @@ def test_model(test_sensors, test_bboxes, test_side_flags, model, sensor_embeddi
             total_loss += loss.item() * batch_sensors.size(0)  # Accumulate loss weighted by batch size
 
             # Compute IoU
-            iou = calculate_iou(predicted_boxes, batch_bboxes)  # [BATCH_SIZE]
+            iou = calculate_iou(predicted_boxes, torch.flatten(batch_bboxes, 1))  # [BATCH_SIZE]
             total_iou += iou.sum().item()  # Accumulate IoU
             total_samples += batch_sensors.size(0)
 
@@ -240,7 +242,7 @@ def train_model(train_sensors, train_bboxes, train_side_flags, test_sensors, tes
             bbox_embedded = bbox_embedding(batch_bboxes)      # [BATCH_SIZE, LATENT_DIM]
 
             # Reshape bbox_embedded to [BATCH_SIZE, 1, LATENT_DIM]
-            bbox_embedded = bbox_embedded.unsqueeze(1)        # [BATCH_SIZE, 1, LATENT_DIM]
+            bbox_embedded = torch.flatten(bbox_embedded.unsqueeze(1),2)        # [BATCH_SIZE, 1, LATENT_DIM]
 
             # Concatenate sensor and bbox embeddings along the sequence dimension
             multimodal_input = torch.cat([sensor_embedded, bbox_embedded], dim=1)  # [BATCH_SIZE, num_features + 2, LATENT_DIM]
@@ -255,7 +257,7 @@ def train_model(train_sensors, train_bboxes, train_side_flags, test_sensors, tes
             total_loss += loss.item() * batch_sensors.size(0)  # Accumulate loss weighted by batch size
 
             # Compute IoU
-            iou = calculate_iou(predicted_boxes, batch_bboxes)  # [BATCH_SIZE]
+            iou = calculate_iou(predicted_boxes, torch.flatten(batch_bboxes, 1))  # [BATCH_SIZE]
             total_iou += iou.sum().item()  # Accumulate IoU
             total_samples += batch_sensors.size(0)
 

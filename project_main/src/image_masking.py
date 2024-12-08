@@ -2,7 +2,9 @@ import cv2
 import os
 import logging
 
-def mask_frame_alternately(input_dir, output_dir, suffix_left='_left', suffix_right='_right'):
+from tqdm import tqdm
+
+def mask_frame_alternately(input_dir, output_dir, suffix_left='_left', suffix_right='_right', sequence_path=None):
     """
     Masks the left and right halves of each frame alternately and saves them with modified filenames.
 
@@ -18,8 +20,9 @@ def mask_frame_alternately(input_dir, output_dir, suffix_left='_left', suffix_ri
     os.makedirs(output_dir, exist_ok=True)
     
     # Get a sorted list of image filenames to ensure consistent processing order
+    image_dir = input_dir if sequence_path is None else sequence_path
     image_filenames = sorted([
-        fname for fname in os.listdir(input_dir)
+        fname for fname in os.listdir(image_dir)
         if fname.lower().endswith(('.png', '.jpg', '.jpeg'))
     ])
     
@@ -64,6 +67,12 @@ def mask_frame_alternately(input_dir, output_dir, suffix_left='_left', suffix_ri
 
 # Example Usage
 if __name__ == "__main__":
-    input_dir = "project_main/data/Annotated Images From Pickle/Subject0"  # Directory containing annotated images
-    output_dir = "project_main/data/Masked Images/Subject0"               # Directory to save masked images
-    mask_frame_alternately(input_dir, output_dir)
+    input_dir = "project_main/data/Annotated Images From Pickle/"  # Directory containing annotated images
+    output_dir = "project_main/data/Masked Images/"               # Directory to save masked images
+    sequence = 'Data/RAN4model_dfv4p4/seqs/indoor/scene0/20201223_140951/RGB_anonymized'
+    for subject in os.listdir(input_dir):
+        input_image_dir = input_dir + subject
+        output_image_dir = output_dir + subject
+        # print(input_image_dir)
+        # print(output_image_dir)
+        mask_frame_alternately(input_image_dir, output_image_dir, sequence_path=sequence)
