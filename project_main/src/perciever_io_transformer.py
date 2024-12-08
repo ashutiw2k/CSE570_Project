@@ -7,7 +7,7 @@ from tqdm import tqdm
 
 # Configuration
 BATCH_SIZE = 16
-LATENT_DIM = 256
+LATENT_DIM = 256  # Set to 256 or 768 based on your choice
 EPOCHS = 10
 LEARNING_RATE = 1e-4
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -31,15 +31,16 @@ NUM_FEATURE_TYPES = len(FEATURE_TYPES)
 
 # Perceiver IO Configuration
 config = PerceiverConfig(
-    input_dim=LATENT_DIM,  # Dimension of input embeddings
-    num_latents=512,  # Number of latent vectors
-    d_latents=LATENT_DIM,  # Latent dimension
-    output_dim=LATENT_DIM  # Dimension of output embeddings
+    input_dim=LATENT_DIM,       # Dimension of input embeddings
+    num_latents=512,            # Number of latent vectors
+    d_latents=LATENT_DIM,       # Latent dimension
+    output_dim=LATENT_DIM,      # Dimension of output embeddings
+    d_model=LATENT_DIM          # Set d_model to match input dimension
 )
 model = PerceiverModel(config).to(DEVICE)
 
 # Embedding Layers
-sensor_embedding = nn.Linear(1, LATENT_DIM).to(DEVICE)  # Corrected: Map each feature scalar to latent dimension
+sensor_embedding = nn.Linear(1, LATENT_DIM).to(DEVICE)  # Map each feature scalar to latent dimension
 feature_type_embedding = nn.Embedding(NUM_FEATURE_TYPES, LATENT_DIM).to(DEVICE)  # Learnable embeddings for feature types
 bbox_embedding = nn.Linear(4, LATENT_DIM).to(DEVICE)  # Bounding box [xmin, ymin, xmax, ymax]
 regression_head = nn.Linear(LATENT_DIM, 4).to(DEVICE)  # Predict bounding boxes
@@ -126,20 +127,17 @@ def train_and_test_model(left_sensors, left_bboxes, right_sensors, right_bboxes)
             bbox_embedded = bbox_embedding(batch_bboxes)  # [BATCH_SIZE, 256]
 
             # Reshape sensor_embedded to match the vision sequence size
-            # Example: Expand sensor embeddings to match the sequence length of bbox embeddings
-            # Assuming bbox_embedded should have a sequence dimension, adjust if necessary
             # Here, we'll treat bbox as part of the sequence
-            bbox_embedded = torch.flatten(bbox_embedded.unsqueeze(1), 2)  # [BATCH_SIZE, 1, 256]
-            # print(bbox_embedded.shape)
-            # print(sensor_embedded.shape)
+            bbox_embedded = bbox_embedded.unsqueeze(1)  # [BATCH_SIZE, 1, 256]
             multimodal_input = torch.cat([sensor_embedded, bbox_embedded], dim=1)  # [BATCH_SIZE, 13, 256]
-            print(f'multimodal input shape: ', multimodal_input.shape)
+            print(f'multimodal input shape: ', multimodal_input.shape)  # Debug statement
+
             # Forward pass
             outputs = model(inputs=multimodal_input)
-            predicted_boxes = regression_head(outputs.last_hidden_state[:, :1, :])  # Adjust as needed
+            predicted_boxes = regression_head(outputs.last_hidden_state[:, :1, :])  # [BATCH_SIZE, 1, 4]
 
             # Compute loss
-            loss = loss_fn(predicted_boxes, batch_bboxes)
+            loss = loss_fn(predicted_boxes.squeeze(1), batch_bboxes)  # [BATCH_SIZE, 4] vs [BATCH_SIZE, 4]
             total_loss += loss.item()
 
             # Backpropagation
@@ -167,11 +165,11 @@ def test_model(test_sensors, test_bboxes):
             sensor_embedded = embed_features(batch_sensors)  # [BATCH_SIZE, 12, 256]
 
             # Forward pass
-            outputs = model(inputs=sensor_embedded)  # Adjust if model expects a different input shape
-            predicted_boxes = regression_head(outputs.last_hidden_state)  # [BATCH_SIZE, sequence_length, 4]
+            outputs = model(inputs=sensor_embedded)  # [BATCH_SIZE, sequence_length, 256]
+            predicted_boxes = regression_head(outputs.last_hidden_state[:, :1, :])  # [BATCH_SIZE, 1, 4]
 
             # Compute loss
-            loss = loss_fn(predicted_boxes, batch_bboxes)
+            loss = loss_fn(predicted_boxes.squeeze(1), batch_bboxes)  # [BATCH_SIZE, 4] vs [BATCH_SIZE, 4]
             total_loss += loss.item()
 
     return total_loss / len(test_sensors)
@@ -180,6 +178,10 @@ def test_model(test_sensors, test_bboxes):
 if __name__ == "__main__":
     # Load data
     left_sensors, left_bboxes, right_sensors, right_bboxes = load_data(INPUT_DATA_PATH)
+
+    # Verify configuration
+    print("Model Configuration:")
+    print(config)
 
     # Train and test model
     train_and_test_model(left_sensors, left_bboxes, right_sensors, right_bboxes)
