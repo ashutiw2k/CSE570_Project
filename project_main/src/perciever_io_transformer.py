@@ -34,7 +34,8 @@ config = PerceiverConfig(
     input_dim=LATENT_DIM,  # Dimension of input embeddings
     num_latents=512,  # Number of latent vectors
     d_latents=LATENT_DIM,  # Latent dimension
-    output_dim=LATENT_DIM  # Dimension of output embeddings
+    output_dim=LATENT_DIM,  # Dimension of output embeddings
+    d_model=LATENT_DIM
 )
 model = PerceiverModel(config).to(DEVICE)
 
@@ -133,7 +134,7 @@ def train_and_test_model(left_sensors, left_bboxes, right_sensors, right_bboxes)
             # print(bbox_embedded.shape)
             # print(sensor_embedded.shape)
             multimodal_input = torch.cat([sensor_embedded, bbox_embedded], dim=1)  # [BATCH_SIZE, 13, 256]
-            print(f'multimodal input shape: ', multimodal_input.shape)
+            # print(f'multimodal input shape: ', multimodal_input.shape)
             # Forward pass
             outputs = model(inputs=multimodal_input)
             predicted_boxes = regression_head(outputs.last_hidden_state[:, :1, :])  # Adjust as needed
