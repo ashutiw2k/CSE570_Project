@@ -102,7 +102,7 @@ if __name__ == "__main__":
 
     
     # Extract and save bounding boxes
-    extract_bounding_boxes(input_dir, output_file, datasets[0], visible_threshold=0.75)
+    extract_bounding_boxes(input_dir, output_file, datasets[0], visible_threshold=0.90)
 
 
 
