@@ -1,69 +1,50 @@
-import torch
-import torchvision.transforms as T
-from PIL import Image
-import os
 import json
-import numpy as np
+import os
+from PIL import Image
+from data_scene0 import get_scene0_synced_datasets
 
-# Load the pretrained DETR model
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-model = torch.hub.load('facebookresearch/detr', 'detr_resnet50', pretrained=True)
-model.eval().to(device)
-
-# Define image transformations
-transform = T.Compose([
-    T.Resize(800),
-    T.ToTensor(),
-    T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-])
-
-# COCO class index for "person"
-PERSON_CLASS_INDEX = 1
-
-def extract_bounding_boxes(input_dir, output_file, threshold=0.7, visible_threshold=0.75):
+def extract_bounding_boxes(input_dir, output_file, datasets, visible_threshold=0.75):
     """
-    Extracts bounding boxes for each person in the images and saves them to a JSON file.
+    Extracts bounding boxes from the provided dataset and saves them to a JSON file.
     Bounding boxes are retained only if at least 75% of their area lies in the visible zone.
 
     Args:
         input_dir (str): Directory containing input images.
         output_file (str): Path to save the bounding box annotations as JSON.
-        threshold (float): Confidence threshold for filtering detections.
+        datasets (list): List of synced datasets containing bounding box data.
         visible_threshold (float): Minimum percentage of the bounding box in the visible zone to retain it.
     """
     annotations = {}
-    for fname in sorted(os.listdir(input_dir)):
+
+    # Assume the datasets are synchronized with image file order
+    for idx, fname in enumerate(sorted(os.listdir(input_dir))):
         if fname.lower().endswith(('.png', '.jpg', '.jpeg')):
             image_path = os.path.join(input_dir, fname)
             img = Image.open(image_path).convert('RGB')
-            img_transformed = transform(img).unsqueeze(0).to(device)
+            img_size = img.size  # (width, height)
 
-            with torch.no_grad():
-                outputs = model(img_transformed)
+            # Get bounding boxes for the current image
+            bounding_boxes = [data[2] for data in datasets[idx]]  # Extract (x, y, w, h)
 
-            pred_logits = outputs['pred_logits'][0]
-            pred_boxes = outputs['pred_boxes'][0]
+            # Convert bounding boxes to [xmin, ymin, xmax, ymax]
+            converted_boxes = []
+            for box in bounding_boxes:
+                x, y, w, h = box
+                xmin, ymin = x, y
+                xmax, ymax = x + w, y + h
+                converted_boxes.append([xmin, ymin, xmax, ymax])
 
-            # Convert logits to probabilities and filter by person class
-            probs = pred_logits.softmax(-1)
-            person_probs = probs[:, PERSON_CLASS_INDEX]
-            keep = person_probs > threshold
-
-            # Rescale bounding boxes to image size
-            boxes = rescale_bboxes(pred_boxes[keep], img.size).to(device)
+            # Determine mask side from file name
+            mask_side = 'left' if '_left' in fname else 'right'
 
             # Filter bounding boxes based on visibility
-            mask_side = 'left' if '_left' in fname else 'right'
-            # boxes = filter_visible_boxes(boxes, img.size, mask_side, visible_threshold)
-            boxes = filter_visible_boxes(boxes, img.size, mask_side, visible_threshold)
+            visible_boxes = filter_visible_boxes(converted_boxes, img_size, mask_side, visible_threshold)
 
-
-            # Save bounding boxes for the current image
+            # Save filtered bounding boxes for the current image
             annotations[fname] = []
-            for box, score in zip(boxes.tolist(), person_probs[keep].tolist()):
+            for box in visible_boxes:
                 annotations[fname].append({
-                    'bbox': box,  # [xmin, ymin, xmax, ymax]
-                    'score': score
+                    'bbox': box  # [xmin, ymin, xmax, ymax]
                 })
 
     # Save all annotations to the output file
@@ -72,46 +53,25 @@ def extract_bounding_boxes(input_dir, output_file, threshold=0.7, visible_thresh
     print(f"Bounding boxes saved to {output_file}")
 
 
-def rescale_bboxes(out_bbox, size):
-    """
-    Rescales bounding boxes to the original image size.
-
-    Args:
-        out_bbox (torch.Tensor): Normalized bounding boxes (cx, cy, w, h).
-        size (tuple): Original image size (width, height).
-
-    Returns:
-        torch.Tensor: Rescaled bounding boxes (xmin, ymin, xmax, ymax).
-    """
-    img_w, img_h = size
-    b = out_bbox.clone()
-    b[:, 0] = out_bbox[:, 0] - 0.5 * out_bbox[:, 2]  # xmin
-    b[:, 1] = out_bbox[:, 1] - 0.5 * out_bbox[:, 3]  # ymin
-    b[:, 2] = out_bbox[:, 0] + 0.5 * out_bbox[:, 2]  # xmax
-    b[:, 3] = out_bbox[:, 1] + 0.5 * out_bbox[:, 3]  # ymax
-    b = b * torch.tensor([img_w, img_h, img_w, img_h], dtype=torch.float32).to(device)
-    return b
-
-
 def filter_visible_boxes(boxes, size, mask_side, visible_threshold):
     """
     Filters bounding boxes to include only those with at least a given percentage of their area
     in the visible zone. Excludes boxes entirely in the masked zone.
 
     Args:
-        boxes (torch.Tensor): Rescaled bounding boxes (xmin, ymin, xmax, ymax).
+        boxes (list): List of bounding boxes [xmin, ymin, xmax, ymax].
         size (tuple): Original image size (width, height).
         mask_side (str): 'left' or 'right', indicating the side masked in the image.
         visible_threshold (float): Minimum percentage of the box area in the visible zone.
 
     Returns:
-        torch.Tensor: Filtered bounding boxes.
+        list: Filtered bounding boxes.
     """
     img_w, img_h = size
     visible_boxes = []
 
     for box in boxes:
-        xmin, ymin, xmax, ymax = box.tolist()
+        xmin, ymin, xmax, ymax = box
         box_area = (xmax - xmin) * (ymax - ymin)
 
         if mask_side == 'left':
@@ -121,18 +81,37 @@ def filter_visible_boxes(boxes, size, mask_side, visible_threshold):
 
         # Check visible area ratio
         if visible_area / box_area >= visible_threshold:
-            visible_boxes.append(box.unsqueeze(0))  # Add a single box as a 1D tensor
+            visible_boxes.append(box)
 
-    if len(visible_boxes) > 0:
-        return torch.cat(visible_boxes, dim=0).to(device)  # Concatenate tensors if there are valid boxes
-    else:
-        return torch.empty((0, 4), device=device)  # Return an empty tensor if no valid boxes
+    return visible_boxes
 
 
 
-# Example Usage
 if __name__ == "__main__":
-    input_dir = "project_main/data/Masked Images/"  # Directory containing masked images
-    output_file = "project_main/data/Masked BB Labels/bounding_boxes.json"  # File to save bounding box annotations
+    # Load synced datasets (replace this with your dataset loading logic)
+    datasets = get_scene0_synced_datasets()
+    
+    # Directory containing input images
+    input_dir = "project_main/data/Masked Images/"
+    
+    # Output file for filtered bounding boxes
+    output_file = "project_main/data/Masked BB Labels/bounding_boxes.json"
+    
+    # Extract and save bounding boxes
+    extract_bounding_boxes(input_dir, output_file, datasets, visible_threshold=0.75)
 
-    extract_bounding_boxes(input_dir, output_file, threshold=0.7, visible_threshold=0.90)
+
+
+
+# Output should be in this format:
+
+# {
+#     "image1_left.png": [
+#         {"bbox": [50, 30, 150, 100]},
+#         {"bbox": [200, 120, 250, 170]}
+#     ],
+#     "image2_right.png": [
+#         {"bbox": [40, 25, 140, 90]},
+#         {"bbox": [190, 110, 240, 160]}
+#     ]
+# }
