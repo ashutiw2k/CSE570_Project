@@ -114,16 +114,21 @@ def train_and_test_model(left_sensors, left_bboxes, right_sensors, right_bboxes)
             test_sensors, test_bboxes = left_sensors, left_bboxes
 
         # Batch training with tqdm progress bar
+        # Adjust Concatenation
         for i in tqdm(range(0, len(train_sensors), BATCH_SIZE), desc=f"Training Epoch {epoch + 1}"):
             batch_sensors = train_sensors[i:i + BATCH_SIZE].to(DEVICE)
             batch_bboxes = train_bboxes[i:i + BATCH_SIZE].to(DEVICE)
 
             # Embed features with feature-type embeddings
-            sensor_embedded = embed_features(batch_sensors)
-            bbox_embedded = bbox_embedding(batch_bboxes)
+            sensor_embedded = embed_features(batch_sensors)  # [BATCH_SIZE, num_features, LATENT_DIM]
+            bbox_embedded = bbox_embedding(batch_bboxes)  # [BATCH_SIZE, num_boxes, LATENT_DIM]
 
-            # Concatenate embeddings
-            multimodal_input = torch.cat([sensor_embedded, bbox_embedded], dim=1)
+            # Reshape sensor_embedded to match the vision sequence size
+            # Example: Expand sensor embeddings to match the sequence length of bbox embeddings
+            sensor_embedded = sensor_embedded.unsqueeze(1).expand(-1, bbox_embedded.size(1), -1)  # [BATCH_SIZE, num_boxes, LATENT_DIM]
+
+            # Concatenate embeddings along the sequence (temporal) dimension
+            multimodal_input = torch.cat([sensor_embedded, bbox_embedded], dim=1)  # [BATCH_SIZE, total_sequence_length, LATENT_DIM]
 
             # Forward pass
             outputs = model(inputs=multimodal_input)
@@ -137,6 +142,7 @@ def train_and_test_model(left_sensors, left_bboxes, right_sensors, right_bboxes)
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
+
 
         print(f"Epoch {epoch + 1}/{EPOCHS}, Training Loss: {total_loss:.4f}")
 
@@ -166,6 +172,7 @@ def test_model(test_sensors, test_bboxes):
             total_loss += loss.item()
 
     return total_loss / len(test_sensors)
+
 
 # Main Execution
 if __name__ == "__main__":
