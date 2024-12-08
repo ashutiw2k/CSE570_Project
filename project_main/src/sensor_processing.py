@@ -2,10 +2,13 @@ import json
 import numpy as np
 
 # Paths to data files
-imu_file = "imuagm9.json"  # IMU data file
-wifi_ftm_file = "wifi_ftm.json"  # WiFi FTM data file
-wifi_rssi_file = "wifi_rssi.json"  # WiFi RSSI data file
-output_file = "Transformer Input/transformer_sensor_input.json"  # Output file for transformer input
+IMU_ALL_SUBJECTS= 'project_main/data/IMU Json/Subject0'
+WIFI_ALL_SUBJECTS= 'project_main/data/Wifi Json/Subject0'
+
+imu_file = IMU_ALL_SUBJECTS + '/' + "imuagm9.json"  # IMU data file
+wifi_ftm_file = WIFI_ALL_SUBJECTS + '/' + "wifi_ftm.json"  # WiFi FTM data file
+wifi_rssi_file = WIFI_ALL_SUBJECTS + '/' + "wifi_rssi.json"  # WiFi RSSI data file
+output_file = "project_main/data/Transformer Input/Subject0/transformer_sensor_input.json"  # Output file for transformer input
 
 # Load JSON files
 with open(imu_file, 'r') as f:
@@ -28,7 +31,7 @@ for ts in timestamps:
 
     # Extract WiFi features
     ftm_features = wifi_ftm_data[ts]['ftm_li']  # Interpolated distances
-    rssi_features = wifi_rssi_data[ts]  # RSSI values
+    rssi_features = wifi_rssi_data[ts]['rssi']  # RSSI values
 
     # Combine features into a single vector
     combined_features = imu_features + ftm_features + rssi_features

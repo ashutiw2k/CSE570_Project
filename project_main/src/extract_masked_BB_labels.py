@@ -91,11 +91,9 @@ if __name__ == "__main__":
     # Load synced datasets (replace this with your dataset loading logic)
     datasets = get_scene0_synced_datasets()
     
-    # Directory containing input images
-    input_dir = "project_main/data/Masked Images/"
-    
-    # Output file for filtered bounding boxes
-    output_file = "project_main/data/Masked BB Labels/bounding_boxes.json"
+    input_dir = "project_main/data/Masked Images/Subject0"  # Directory containing masked images
+    output_file = "project_main/data/Masked BB Labels/Subject0/bounding_boxes.json"  # File to save bounding box annotations
+
     
     # Extract and save bounding boxes
     extract_bounding_boxes(input_dir, output_file, datasets, visible_threshold=0.75)

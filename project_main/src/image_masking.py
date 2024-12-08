@@ -44,6 +44,6 @@ def mask_frame(input_dir, output_dir, suffix_left='_left', suffix_right='_right'
 
 # Example Usage
 if __name__ == "__main__":
-    input_dir = "20201223_140951-005/RGB_anonymized/"  # Directory containing annotated images
-    output_dir = "project_main/data/Masked Images/"   # Directory to save masked images
+    input_dir = "project_main/data/Annotated Images From Pickle/Subject0"  # Directory containing annotated images
+    output_dir = "project_main/data/Masked Images/Subject0"   # Directory to save masked images
     mask_frame(input_dir, output_dir)
