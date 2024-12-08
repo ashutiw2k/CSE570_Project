@@ -13,7 +13,7 @@ import json
 SCENE0_IMG_PATH = '20201223_140951-005/RGB_anonymized'
 SCENE0_ANNOTATED_PATH = 'project_main/data/Annotated Images'
 OUT_DIR_PATH = 'project_main/data/Annotated Images From Pickle'
-MAX_IMAGES = 10
+# MAX_IMAGES = 10
 COLORS = [
     (255,0,0),
     (0,255,0),
@@ -33,43 +33,22 @@ def annotate_subject(dataset, image_path, out_path, color, all_assets):
     ctr = 0
     for data in dataset:
         img_name = data[1]+'.png'
-        img = cv2.imread(image_path + '/' + img_name)
-        print(img_name)
-        img_name_in_asset = str(img_name).replace(' ', '%20').replace('_',':')
-        print(img_name_in_asset)
+        img = cv2.imread(image_path + '/' + img_name)   
+    
+        # print('Image JSON does not contain bounding box values')
+        x, y, w, h = map(int, tuple(data[2]))
         
-        bounding_box = None
-        for asset in all_assets:
-            if asset['asset']['name'] == img_name_in_asset:
-                regions = asset['regions']
-                subject = list(str(out_path.split('/')[-1]))
-                sub_num = int(subject[-1]) + 1
-                print(sub_num)    
-                subject[-1] = str(sub_num)
-                subject = ''.join(subject)
-                for region in regions:
-                    if subject in region['tags']:
-                        bounding_box = (region['boundingBox']['left'], region['boundingBox']['top'], region['boundingBox']['width'], region['boundingBox']['height'])
-                        break
-                break
-                
-        if bounding_box is None:
-            print('Image JSON does not contain bounding box values')
-            x, y, d, w, h = map(int, tuple(data[2]))
-        else:
-            x,y,w,h = map(int, tuple(bounding_box))
-
         # x,y = rescale_coordinates(x,y)
         # w,h = rescale_coordinates(w,h)
         # print(img.shape)
-        print((x,y))
-        print((x+w,y+h))
+        # print((x,y))
+        # print((x+w,y+h))
 
         cv2.rectangle(img, (int(x), int(y)), (int(x + w), int(y + h)), color, 2)
         cv2.imwrite(out_path+'/'+img_name, img)
-        ctr += 1
-        if ctr > MAX_IMAGES:
-            break
+        # ctr += 1
+        # if ctr > MAX_IMAGES:
+        #     break
 
 
 def print_dict_tree(dictionary, indent=''):

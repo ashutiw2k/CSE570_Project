@@ -76,8 +76,8 @@ class SyncedDataSet(Dataset):
     def __getitem__(self, idx):
         return (self.timestamps[idx], self.readable_date[idx], \
                 self.bb_json[idx], self.bbx5h[idx], self.bbxc3h[idx], \
-                self.ftm[idx], self.ftm_li[idx], \
                 self.imu19[idx], self.imuagm9[idx], self.imugq10[idx], self.imugqm13[idx], \
+                self.ftm[idx], self.ftm_li[idx], \
                 self.rssi[idx], self.rssi_li[idx])
 
 
