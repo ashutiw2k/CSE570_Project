@@ -55,6 +55,8 @@ def extract_bounding_boxes(input_dir, output_file, threshold=0.7, visible_thresh
             # Filter bounding boxes based on visibility
             mask_side = 'left' if '_left' in fname else 'right'
             # boxes = filter_visible_boxes(boxes, img.size, mask_side, visible_threshold)
+            boxes = filter_visible_boxes(boxes, img.size, mask_side, visible_threshold)
+
 
             # Save bounding boxes for the current image
             annotations[fname] = []
@@ -107,8 +109,9 @@ def filter_visible_boxes(boxes, size, mask_side, visible_threshold):
     """
     img_w, img_h = size
     visible_boxes = []
+
     for box in boxes:
-        xmin, ymin, xmax, ymax = box
+        xmin, ymin, xmax, ymax = box.tolist()
         box_area = (xmax - xmin) * (ymax - ymin)
 
         if mask_side == 'left':
@@ -116,13 +119,15 @@ def filter_visible_boxes(boxes, size, mask_side, visible_threshold):
         else:  # 'right'
             visible_area = max(0, img_w // 2 - xmin) * (ymax - ymin)
 
+        # Check visible area ratio
         if visible_area / box_area >= visible_threshold:
-            visible_boxes.append(box)
-        # else:
-        #     visible_boxes.append(torch.tensor( np.array([np.nan for i in box]) ).to(device))
-    
-    print(visible_boxes)
-    return torch.cat(visible_boxes).to(device)
+            visible_boxes.append(box.unsqueeze(0))  # Add a single box as a 1D tensor
+
+    if len(visible_boxes) > 0:
+        return torch.cat(visible_boxes, dim=0).to(device)  # Concatenate tensors if there are valid boxes
+    else:
+        return torch.empty((0, 4), device=device)  # Return an empty tensor if no valid boxes
+
 
 
 # Example Usage
@@ -130,4 +135,4 @@ if __name__ == "__main__":
     input_dir = "project_main/data/Masked Images/"  # Directory containing masked images
     output_file = "project_main/data/Masked BB Labels/bounding_boxes.json"  # File to save bounding box annotations
 
-    extract_bounding_boxes(input_dir, output_file, threshold=0.7, visible_threshold=0.75)
+    extract_bounding_boxes(input_dir, output_file, threshold=0.7, visible_threshold=0.90)
