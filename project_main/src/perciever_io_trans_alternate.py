@@ -60,14 +60,45 @@ def initialize_model(latent_dim, num_feature_types):
 
     return model, sensor_embedding, feature_type_embedding, bbox_embedding, regression_head, config
 
-# Define the training function
-def train_model(train_sensors, train_bboxes, model, sensor_embedding, feature_type_embedding, bbox_embedding, regression_head, loss_fn, optimizer, epoch_start=1, epoch_end=EPOCHS):
+# Function to split data into training and testing subsets
+def split_data(sensors, bboxes, test_ratio=0.2):
     """
-    Train the model on the provided sensor and bbox data.
+    Splits the data into training and testing subsets.
 
     Args:
-        train_sensors (torch.Tensor): Sensor data [num_samples, num_features].
-        train_bboxes (torch.Tensor): Bounding box data [num_samples, 4].
+        sensors (torch.Tensor): Sensor data [num_samples, num_features].
+        bboxes (torch.Tensor): Bounding box data [num_samples, 4].
+        test_ratio (float): Proportion of data to use for testing.
+
+    Returns:
+        tuple: (train_sensors, train_bboxes, test_sensors, test_bboxes)
+    """
+    num_samples = sensors.shape[0]
+    indices = torch.randperm(num_samples)
+
+    test_size = int(num_samples * test_ratio)
+    train_size = num_samples - test_size
+
+    train_indices = indices[:train_size]
+    test_indices = indices[train_size:]
+
+    train_sensors = sensors[train_indices]
+    train_bboxes = bboxes[train_indices]
+    test_sensors = sensors[test_indices]
+    test_bboxes = bboxes[test_indices]
+
+    return train_sensors, train_bboxes, test_sensors, test_bboxes
+
+# Define the training function
+def train_model(train_sensors, train_bboxes, test_sensors, test_bboxes, model, sensor_embedding, feature_type_embedding, bbox_embedding, regression_head, loss_fn, optimizer, epoch_start=1, epoch_end=EPOCHS):
+    """
+    Trains the model and evaluates it on the testing subset within each epoch.
+
+    Args:
+        train_sensors (torch.Tensor): Training sensor data [num_train_samples, num_features].
+        train_bboxes (torch.Tensor): Training bounding box data [num_train_samples, 4].
+        test_sensors (torch.Tensor): Testing sensor data [num_test_samples, num_features].
+        test_bboxes (torch.Tensor): Testing bounding box data [num_test_samples, 4].
         model (nn.Module): The Perceiver model.
         sensor_embedding (nn.Module): Embedding layer for sensor data.
         feature_type_embedding (nn.Module): Embedding layer for feature types.
@@ -78,9 +109,8 @@ def train_model(train_sensors, train_bboxes, model, sensor_embedding, feature_ty
         epoch_start (int): Starting epoch number.
         epoch_end (int): Ending epoch number.
     """
-    model.train()
-
     for epoch in range(epoch_start, epoch_end + 1):
+        model.train()
         total_loss = 0.0
 
         # Iterate through batches
@@ -93,7 +123,7 @@ def train_model(train_sensors, train_bboxes, model, sensor_embedding, feature_ty
             bbox_embedded = bbox_embedding(batch_bboxes)      # [BATCH_SIZE, LATENT_DIM]
 
             # Reshape bbox_embedded to [BATCH_SIZE, 1, LATENT_DIM]
-            bbox_embedded = torch.flatten(bbox_embedded.unsqueeze(1), 2)        # [BATCH_SIZE, 1, LATENT_DIM]
+            bbox_embedded = bbox_embedded.unsqueeze(1)        # [BATCH_SIZE, 1, LATENT_DIM]
 
             # Concatenate sensor and bbox embeddings along the sequence dimension
             multimodal_input = torch.cat([sensor_embedded, bbox_embedded], dim=1)  # [BATCH_SIZE, num_features + 1, LATENT_DIM]
@@ -111,8 +141,12 @@ def train_model(train_sensors, train_bboxes, model, sensor_embedding, feature_ty
             loss.backward()
             optimizer.step()
 
-        average_loss = total_loss / (len(train_sensors) / BATCH_SIZE)
-        print(f"Epoch {epoch}/{epoch_end}, Training Loss: {average_loss:.4f}")
+        average_train_loss = total_loss / (len(train_sensors) / BATCH_SIZE)
+
+        # After each epoch, compute test loss
+        test_loss = test_model(test_sensors, test_bboxes, model, sensor_embedding, feature_type_embedding, bbox_embedding, regression_head, loss_fn)
+
+        print(f"Epoch {epoch}/{epoch_end}, Training Loss: {average_train_loss:.4f}, Testing Loss: {test_loss:.4f}")
 
 # Function to embed features
 def embed_features(sensor_features, sensor_embedding, feature_type_embedding):
@@ -143,6 +177,53 @@ def embed_features(sensor_features, sensor_embedding, feature_type_embedding):
 
     # Add feature-type embeddings to raw embeddings
     return raw_embeddings + type_embeddings  # [batch_size, num_features, LATENT_DIM]
+
+# Define the testing function
+def test_model(test_sensors, test_bboxes, model, sensor_embedding, feature_type_embedding, bbox_embedding, regression_head, loss_fn):
+    """
+    Evaluates the model on the testing subset.
+
+    Args:
+        test_sensors (torch.Tensor): Testing sensor data [num_test_samples, num_features].
+        test_bboxes (torch.Tensor): Testing bounding box data [num_test_samples, 4].
+        model (nn.Module): The Perceiver model.
+        sensor_embedding (nn.Module): Embedding layer for sensor data.
+        feature_type_embedding (nn.Module): Embedding layer for feature types.
+        bbox_embedding (nn.Module): Embedding layer for bounding boxes.
+        regression_head (nn.Module): Regression head to predict bounding boxes.
+        loss_fn (nn.Module): Loss function.
+
+    Returns:
+        float: Average testing loss.
+    """
+    model.eval()
+    total_loss = 0.0
+
+    with torch.no_grad():
+        for i in tqdm(range(0, len(test_sensors), BATCH_SIZE), desc="Testing"):
+            batch_sensors = test_sensors[i:i + BATCH_SIZE].to(DEVICE)  # [BATCH_SIZE, num_features]
+            batch_bboxes = test_bboxes[i:i + BATCH_SIZE].to(DEVICE)  # [BATCH_SIZE, 4]
+
+            # Embed features with feature-type embeddings
+            sensor_embedded = embed_features(batch_sensors, sensor_embedding, feature_type_embedding)  # [BATCH_SIZE, num_features, LATENT_DIM]
+            bbox_embedded = bbox_embedding(batch_bboxes)      # [BATCH_SIZE, LATENT_DIM]
+
+            # Reshape bbox_embedded to [BATCH_SIZE, 1, LATENT_DIM]
+            bbox_embedded = bbox_embedded.unsqueeze(1)        # [BATCH_SIZE, 1, LATENT_DIM]
+
+            # Concatenate sensor and bbox embeddings along the sequence dimension
+            multimodal_input = torch.cat([sensor_embedded, bbox_embedded], dim=1)  # [BATCH_SIZE, num_features + 1, LATENT_DIM]
+
+            # Forward pass
+            outputs = model(inputs=multimodal_input)
+            predicted_boxes = regression_head(outputs.last_hidden_state[:, :1, :])  # [BATCH_SIZE, 1, 4]
+
+            # Compute loss
+            loss = loss_fn(predicted_boxes.squeeze(1), batch_bboxes)  # [BATCH_SIZE, 4] vs [BATCH_SIZE, 4]
+            total_loss += loss.item()
+
+    average_loss = total_loss / (len(test_sensors) / BATCH_SIZE)
+    return average_loss
 
 # Load and Process Data
 def load_data(input_path):
@@ -189,6 +270,9 @@ if __name__ == "__main__":
         right_bboxes = right_bboxes[:min_samples]
         print(f"Truncated to {min_samples} samples.")
 
+    # Define Test Ratio
+    TEST_RATIO = 0.2  # 20% for testing
+
     # First Training Phase: Train on left_sensors to predict right_bboxes
     print("=== First Training Phase: Train on left sensors to predict right bounding boxes ===")
     model1, sensor_embedding1, feature_type_embedding1, bbox_embedding1, regression_head1, config1 = initialize_model(LATENT_DIM, NUM_FEATURE_TYPES)
@@ -202,9 +286,15 @@ if __name__ == "__main__":
         lr=LEARNING_RATE
     )
 
+    # Split data into training and testing for run1
+    train1_sensors, train1_bboxes, test1_sensors, test1_bboxes = split_data(left_sensors, right_bboxes, test_ratio=TEST_RATIO)
+
+    # Train and Test
     train_model(
-        train_sensors=left_sensors,
-        train_bboxes=right_bboxes,
+        train_sensors=train1_sensors,
+        train_bboxes=train1_bboxes,
+        test_sensors=test1_sensors,
+        test_bboxes=test1_bboxes,
         model=model1,
         sensor_embedding=sensor_embedding1,
         feature_type_embedding=feature_type_embedding1,
@@ -241,9 +331,15 @@ if __name__ == "__main__":
         lr=LEARNING_RATE
     )
 
+    # Split data into training and testing for run2
+    train2_sensors, train2_bboxes, test2_sensors, test2_bboxes = split_data(right_sensors, left_bboxes, test_ratio=TEST_RATIO)
+
+    # Train and Test
     train_model(
-        train_sensors=right_sensors,
-        train_bboxes=left_bboxes,
+        train_sensors=train2_sensors,
+        train_bboxes=train2_bboxes,
+        test_sensors=test2_sensors,
+        test_bboxes=test2_bboxes,
         model=model2,
         sensor_embedding=sensor_embedding2,
         feature_type_embedding=feature_type_embedding2,
@@ -256,7 +352,7 @@ if __name__ == "__main__":
     )
 
     # Save the model after second training phase
-    model2_save_path = "perceiver_io_multimodal_alternating.pth"
+    model2_save_path = "perceiver_io_multimodal_run2.pth"
     torch.save({
         'model_state_dict': model2.state_dict(),
         'sensor_embedding_state_dict': sensor_embedding2.state_dict(),
