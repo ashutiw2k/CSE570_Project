@@ -1,3 +1,4 @@
+import datetime, pytz
 import os
 
 import pickle as pkl
@@ -7,6 +8,10 @@ import json
 
 # import torch
 from torch.utils.data import Dataset, DataLoader, ConcatDataset
+
+import pytz.zoneinfo
+
+import pytz.zoneinfo.Europe
 # from datasets import Dataset, 
 
 # Aditya may need to modify this variable. 
@@ -27,15 +32,25 @@ IMU_GQM13_SYNC_PATH = 'sync_ts16_dfv4p4/IMUlgqm13_sync_dfv4p4.pkl'
 RSSI_LI_SYNC_PATH = 'sync_ts16_dfv4p4/RSSI_li_sync_dfv4p4.pkl'
 RSSI_SYNC_PATH = 'sync_ts16_dfv4p4/RSSI_sync_dfv4p4.pkl'
 
+JSON_FILE_PATH = 'RGBg_ts16_dfv4p4_ls.json'
+
+# TIMEZONE = pytz.UTC
+
 class SyncedDataSet(Dataset):
     '''
     NOTE: Make a synced dataset PER SUBJECT.  
     '''
-    def __init__(self, bbx5h, bbxc3h, \
+    def __init__(self, timestamps, bbx5h, bbxc3h, \
                  ftm_li, ftm, \
                  imu19, imuagm9, imugq10, imugqm13, \
                  rssi_li, rssi):
         
+        self.timestamps = timestamps
+        self.readable_date = []
+        for timestamp in self.timestamps:
+            dt_object = datetime.datetime.fromtimestamp(float(timestamp), tz=pytz.UTC)
+            self.readable_date.append(dt_object.strftime('%Y-%m-%d %H_%M_%S.%f'))
+
         self.bbx5h = bbx5h
         self.bbxc3h = bbxc3h
         self.ftm_li = ftm_li
@@ -62,7 +77,8 @@ class SyncedDataSet(Dataset):
                 (self.rssi[idx], self.rssi_li[idx]))
     
     def __getitem__(self, idx):
-        return (self.bbx5h[idx], self.bbxc3h[idx], \
+        return (self.timestamps[idx], self.readable_date[idx], \
+                self.bbx5h[idx], self.bbxc3h[idx], \
                 self.ftm[idx], self.ftm_li[idx], \
                 self.imu19[idx], self.imuagm9[idx], self.imugq10[idx], self.imugqm13[idx], \
                 self.rssi[idx], self.rssi_li[idx])
@@ -105,6 +121,9 @@ def get_scene_synced_datasets(sequence=None, is_indoor=True, scene=None, full_pa
     rssi_li_data = load_data_from_path(full_path + '/' + RSSI_LI_SYNC_PATH)
     rssi_data = load_data_from_path(full_path + '/' + RSSI_SYNC_PATH)
 
+    with open(full_path + '/' + JSON_FILE_PATH) as file:
+        json_data = json.load(file)
+
     # print(bbx5h_data.shape, bbxc3h_data.shape, ftm_data.shape, ftm_li_data.shape, \
     #       imu19_data.shape, imuagm9_data.shape, imugq10_data.shape, imugqm13_data.shape, \
     #         rssi_data.shape, rssi_li_data.shape, sep=', ')
@@ -112,6 +131,7 @@ def get_scene_synced_datasets(sequence=None, is_indoor=True, scene=None, full_pa
     dataset_list = []
     for i in range(bbx5h_data.shape[1]):
         sub_dataset = SyncedDataSet(
+            timestamps=json_data, \
             bbx5h=bbx5h_data[:,i,:], bbxc3h=bbxc3h_data[:,i,:], \
             ftm=ftm_data[:,i,:], ftm_li=ftm_li_data[:,i,:], \
             imu19=imu19_data[:,i,:], imuagm9=imuagm9_data[:,i,:], imugq10=imugq10_data[:,i,:], imugqm13=imugqm13_data[:,i,:], \
@@ -133,6 +153,7 @@ def get_all_sequences_synced_dataset(is_indoor=True, scene=SCENE0, data_root = D
     for item in os.listdir(sequence_path):
         # print(item)
         full_path = os.path.join(sequence_path, item)
+        print(full_path)
         if os.path.isdir(full_path):
             datasets = get_scene_synced_datasets(full_path=full_path)
             all_datasets.append(datasets)
@@ -149,7 +170,7 @@ if __name__ == '__main__':
     print(len(datasets))
     for d in datasets:
         print(len(d))
-        print(d)
+        print(d[0])
     
 
     

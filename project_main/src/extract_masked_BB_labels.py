@@ -3,6 +3,7 @@ import torchvision.transforms as T
 from PIL import Image
 import os
 import json
+import numpy as np
 
 # Load the pretrained DETR model
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -49,11 +50,11 @@ def extract_bounding_boxes(input_dir, output_file, threshold=0.7, visible_thresh
             keep = person_probs > threshold
 
             # Rescale bounding boxes to image size
-            boxes = rescale_bboxes(pred_boxes[keep], img.size)
+            boxes = rescale_bboxes(pred_boxes[keep], img.size).to(device)
 
             # Filter bounding boxes based on visibility
             mask_side = 'left' if '_left' in fname else 'right'
-            boxes = filter_visible_boxes(boxes, img.size, mask_side, visible_threshold)
+            # boxes = filter_visible_boxes(boxes, img.size, mask_side, visible_threshold)
 
             # Save bounding boxes for the current image
             annotations[fname] = []
@@ -86,7 +87,7 @@ def rescale_bboxes(out_bbox, size):
     b[:, 1] = out_bbox[:, 1] - 0.5 * out_bbox[:, 3]  # ymin
     b[:, 2] = out_bbox[:, 0] + 0.5 * out_bbox[:, 2]  # xmax
     b[:, 3] = out_bbox[:, 1] + 0.5 * out_bbox[:, 3]  # ymax
-    b = b * torch.tensor([img_w, img_h, img_w, img_h], dtype=torch.float32)
+    b = b * torch.tensor([img_w, img_h, img_w, img_h], dtype=torch.float32).to(device)
     return b
 
 
@@ -117,13 +118,16 @@ def filter_visible_boxes(boxes, size, mask_side, visible_threshold):
 
         if visible_area / box_area >= visible_threshold:
             visible_boxes.append(box)
-
-    return torch.tensor(visible_boxes, dtype=torch.float32)
+        # else:
+        #     visible_boxes.append(torch.tensor( np.array([np.nan for i in box]) ).to(device))
+    
+    print(visible_boxes)
+    return torch.cat(visible_boxes).to(device)
 
 
 # Example Usage
 if __name__ == "__main__":
-    input_dir = "../data/Masked Frames"  # Directory containing masked images
-    output_file = "../data/Masked BB Labels/bounding_boxes.json"  # File to save bounding box annotations
+    input_dir = "project_main/data/Masked Images/"  # Directory containing masked images
+    output_file = "project_main/data/Masked BB Labels/bounding_boxes.json"  # File to save bounding box annotations
 
     extract_bounding_boxes(input_dir, output_file, threshold=0.7, visible_threshold=0.75)
