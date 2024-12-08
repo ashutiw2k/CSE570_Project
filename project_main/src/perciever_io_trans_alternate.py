@@ -93,7 +93,7 @@ def train_model(train_sensors, train_bboxes, model, sensor_embedding, feature_ty
             bbox_embedded = bbox_embedding(batch_bboxes)      # [BATCH_SIZE, LATENT_DIM]
 
             # Reshape bbox_embedded to [BATCH_SIZE, 1, LATENT_DIM]
-            bbox_embedded = bbox_embedded.unsqueeze(1)        # [BATCH_SIZE, 1, LATENT_DIM]
+            bbox_embedded = torch.flatten(bbox_embedded.unsqueeze(1), 2)        # [BATCH_SIZE, 1, LATENT_DIM]
 
             # Concatenate sensor and bbox embeddings along the sequence dimension
             multimodal_input = torch.cat([sensor_embedded, bbox_embedded], dim=1)  # [BATCH_SIZE, num_features + 1, LATENT_DIM]
