@@ -3,7 +3,7 @@ import os
 from PIL import Image
 from data_scene0 import get_scene0_synced_datasets
 
-def extract_bounding_boxes(input_dir, output_file, datasets, visible_threshold=0.75):
+def extract_bounding_boxes(input_dir, output_file, dataset, visible_threshold=0.90):
     """
     Extracts bounding boxes from the provided dataset and saves them to a JSON file.
     Bounding boxes are retained only if at least 75% of their area lies in the visible zone.
@@ -16,6 +16,9 @@ def extract_bounding_boxes(input_dir, output_file, datasets, visible_threshold=0
     """
     annotations = {}
 
+    bounding_boxes = {str(data[1]):data[2] for data in dataset}
+    # print(list(bounding_boxes.items())[0])
+
     # Assume the datasets are synchronized with image file order
     for idx, fname in enumerate(sorted(os.listdir(input_dir))):
         if fname.lower().endswith(('.png', '.jpg', '.jpeg')):
@@ -24,15 +27,16 @@ def extract_bounding_boxes(input_dir, output_file, datasets, visible_threshold=0
             img_size = img.size  # (width, height)
 
             # Get bounding boxes for the current image
-            bounding_boxes = [data[2] for data in datasets[idx]]  # Extract (x, y, w, h)
+            # print(fname.split('_'))
+            timestamp = '_'.join(fname.split('_')[0:3])
 
             # Convert bounding boxes to [xmin, ymin, xmax, ymax]
             converted_boxes = []
-            for box in bounding_boxes:
-                x, y, w, h = box
-                xmin, ymin = x, y
-                xmax, ymax = x + w, y + h
-                converted_boxes.append([xmin, ymin, xmax, ymax])
+
+            x, y, w, h = bounding_boxes[timestamp]
+            xmin, ymin = x, y
+            xmax, ymax = x + w, y + h
+            converted_boxes.append([xmin, ymin, xmax, ymax])
 
             # Determine mask side from file name
             mask_side = 'left' if '_left' in fname else 'right'
@@ -82,6 +86,8 @@ def filter_visible_boxes(boxes, size, mask_side, visible_threshold):
         # Check visible area ratio
         if visible_area / box_area >= visible_threshold:
             visible_boxes.append(box)
+        else:
+            visible_boxes.append([0,0,0,0])
 
     return visible_boxes
 
@@ -96,7 +102,7 @@ if __name__ == "__main__":
 
     
     # Extract and save bounding boxes
-    extract_bounding_boxes(input_dir, output_file, datasets, visible_threshold=0.75)
+    extract_bounding_boxes(input_dir, output_file, datasets[0], visible_threshold=0.75)
 
 
 
