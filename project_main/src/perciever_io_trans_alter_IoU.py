@@ -6,6 +6,7 @@ import json
 import os
 import numpy as np
 from tqdm import tqdm
+from sklearn.model_selection import train_test_split
 
 # Configuration
 BATCH_SIZE = 16
@@ -210,8 +211,8 @@ def test_model(test_sensors, test_bboxes, model, sensor_embedding, feature_type_
             predicted_boxes = regression_head(outputs.last_hidden_state[:, :1, :])  # [BATCH_SIZE, 1, 4]
 
             # Compute loss
-            loss = loss_fn(predicted_boxes.squeeze(1), batch_bboxes.squeeze(1))  # [BATCH_SIZE, 4] vs [BATCH_SIZE, 4]
-            total_loss += loss.item()
+            loss = loss_fn(predicted_boxes, batch_bboxes.squeeze(1))  # [BATCH_SIZE, 4] vs [BATCH_SIZE, 4]
+            total_loss += loss.item() * batch_sensors.size(0)  # Accumulate loss weighted by batch size
 
             # Compute IoU
             iou = calculate_iou(predicted_boxes, torch.flatten(batch_bboxes, 1))  # [BATCH_SIZE]
@@ -277,10 +278,13 @@ def train_model(train_sensors, train_bboxes, train_side_flags, test_sensors, tes
             predicted_boxes = regression_head(outputs.last_hidden_state[:, :1, :])  # [BATCH_SIZE, 1, 4]
 
             # Compute loss
-            # print(predicted_boxes.shape)
-            # print(batch_bboxes.shape)
-            loss = loss_fn(predicted_boxes.squeeze(1), batch_bboxes.squeeze(1))  # [BATCH_SIZE, 4] vs [BATCH_SIZE, 4]
-            total_loss += loss.item()
+            loss = loss_fn(predicted_boxes, batch_bboxes.squeeze(1))  # [BATCH_SIZE, 4] vs [BATCH_SIZE, 4]
+            total_loss += loss.item() * batch_sensors.size(0)  # Accumulate loss weighted by batch size
+
+            # Compute IoU
+            iou = calculate_iou(predicted_boxes, torch.flatten(batch_bboxes, 1))  # [BATCH_SIZE]
+            total_iou += iou.sum().item()  # Accumulate IoU
+            total_samples += batch_sensors.size(0)
 
             # Backpropagation
             optimizer.zero_grad()

@@ -19,8 +19,8 @@ class NpEncoder(json.JSONEncoder):
             return super(NpEncoder, self).default(obj)
 
 if __name__ == '__main__':
-    # datasets = get_all_sequences_synced_dataset()
-    datasets = get_scene_synced_datasets(full_path='Data/RAN4model_dfv4p4/seqs/indoor/scene0/20201223_140951')
+    datasets = get_all_sequences_synced_dataset()
+    # datasets = get_scene_synced_datasets(full_path='Data/RAN4model_dfv4p4/seqs/indoor/scene0/20201223_140951')
     ctr = 0
     for dataset in datasets:
         wifi_ftm_dict = {} #9,10

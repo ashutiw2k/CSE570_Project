@@ -10,7 +10,7 @@ from sklearn.model_selection import train_test_split
 # Configuration
 BATCH_SIZE = 16
 LATENT_DIM = 256  # Ensure this matches d_model
-EPOCHS = 10
+EPOCHS = 20
 LEARNING_RATE = 1e-4
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 

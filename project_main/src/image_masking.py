@@ -34,7 +34,7 @@ def mask_frame_alternately(input_dir, output_dir, suffix_left='_left', suffix_ri
         logging.warning(f"No images found in {input_dir}.")
         return
     
-    for idx, fname in enumerate(image_filenames):
+    for idx, fname in tqdm(enumerate(image_filenames), desc=image_dir.split('/')[-1]):
         frame_path = os.path.join(input_dir, fname)
         # print(frame_path)
         
@@ -68,8 +68,8 @@ def mask_frame_alternately(input_dir, output_dir, suffix_left='_left', suffix_ri
         success = cv2.imwrite(out_path, img_masked)
         if not success:
             logging.error(f"Failed to write file: {out_path}")
-        else:
-            logging.info(f"Saved masked image: {out_path}")
+        # else:
+            # logging.info(f"Saved masked image: {out_path}")
 
 # Example Usage
 if __name__ == "__main__":
@@ -81,4 +81,4 @@ if __name__ == "__main__":
         output_image_dir = output_dir + subject
         # print(input_image_dir)
         # print(output_image_dir)
-        mask_frame_alternately(input_image_dir, output_image_dir, sequence_path=sequence)
+        mask_frame_alternately(input_image_dir, output_image_dir, sequence_path=None)
