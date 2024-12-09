@@ -14,10 +14,10 @@ LEARNING_RATE = 1e-4
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Paths to data files
-TRANSFORMER_ALL_SUBJECTS = 'project_main/data/Transformer Input/Subject0'
+TRANSFORMER_ALL_SUBJECTS = 'project_main/data/Transformer Input/'
 
 # Load sensor inputs and bounding box labels
-INPUT_DATA_PATH = os.path.join(TRANSFORMER_ALL_SUBJECTS, "transformer_input.json")  # Output
+INPUT_DATA_PATHS = [TRANSFORMER_ALL_SUBJECTS + subject + '/' + "transformer_input.json" for subject in os.listdir(TRANSFORMER_ALL_SUBJECTS)]  # Output
 
 # Define Feature Types
 FEATURE_TYPES = [
@@ -262,7 +262,16 @@ def load_and_combine_data(input_path):
 # Main Execution
 if __name__ == "__main__":
     # Load and combine data
-    combined_sensors, combined_bboxes, combined_side_flags = load_and_combine_data(INPUT_DATA_PATH)
+    combined_sensors=torch.tensor([])
+    combined_bboxes=torch.tensor([]) 
+    combined_side_flags=torch.tensor([])
+    for path in INPUT_DATA_PATHS:
+        combined_sensors_path, combined_bboxes_path, combined_side_flags_path = load_and_combine_data(path)
+        combined_sensors = torch.cat((combined_sensors, combined_sensors_path), dim=0)
+        combined_bboxes = torch.cat((combined_bboxes, combined_bboxes_path), dim=0)
+        combined_side_flags = torch.cat((combined_side_flags, combined_side_flags_path), dim=0)
+        
+
 
     # Verify combined data sizes
     num_combined = combined_sensors.shape[0]

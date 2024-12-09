@@ -75,4 +75,4 @@ if __name__ == "__main__":
         output_image_dir = output_dir + subject
         # print(input_image_dir)
         # print(output_image_dir)
-        mask_frame_alternately(input_image_dir, output_image_dir, sequence_path=sequence)
+        mask_frame_alternately(input_image_dir, output_image_dir, sequence_path=None)

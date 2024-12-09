@@ -1,7 +1,7 @@
 import json
 import os
 from PIL import Image
-from data_scene0 import get_scene0_synced_datasets
+from data import get_scene_synced_datasets, get_all_sequences_synced_dataset
 
 def extract_bounding_boxes(input_dir, output_file, dataset, visible_threshold=0.90):
     """
@@ -95,14 +95,24 @@ def filter_visible_boxes(boxes, size, mask_side, visible_threshold):
 
 if __name__ == "__main__":
     # Load synced datasets (replace this with your dataset loading logic)
-    datasets = get_scene0_synced_datasets()
+    # datasets = get_scene_synced_datasets(full_path='Data/RAN4model_dfv4p4/seqs/indoor/scene0/20201223_140951')
+    datasets = get_all_sequences_synced_dataset()
     
-    input_dir = "project_main/data/Masked Images/Subject0"  # Directory containing masked images
-    output_file = "project_main/data/Masked BB Labels/Subject0/bounding_boxes.json"  # File to save bounding box annotations
+    
+    input_dir = "project_main/data/Masked Images/"  # Directory containing masked images
+    output_dir = "project_main/data/Masked BB Labels/"
+    output_file = "bounding_boxes.json"  # File to save bounding box annotations
 
-    
-    # Extract and save bounding boxes
-    extract_bounding_boxes(input_dir, output_file, datasets[0], visible_threshold=0.90)
+    ctr = 0
+    for dataset in datasets:
+        subject = f'Subject{ctr}'
+        input_image_dir = input_dir + subject
+        output_image_dir = output_dir + subject + '/' + output_file
+        print(input_image_dir)
+        print(output_image_dir)
+        # Extract and save bounding boxes
+        extract_bounding_boxes(input_image_dir, output_image_dir, dataset, visible_threshold=0.90)
+        ctr +=1
 
 
 
