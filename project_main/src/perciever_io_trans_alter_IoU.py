@@ -4,6 +4,7 @@ import torch.optim as optim
 from transformers import PerceiverConfig, PerceiverModel
 import json
 import os
+import numpy as np
 from tqdm import tqdm
 
 # Configuration
@@ -14,10 +15,10 @@ LEARNING_RATE = 1e-4
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Paths to data files
-TRANSFORMER_ALL_SUBJECTS = 'project_main/data/Transformer Input/Subject0'
+TRANSFORMER_ALL_SUBJECTS = 'project_main/data/Transformer Input/'
 
 # Load sensor inputs and bounding box labels
-INPUT_DATA_PATH = os.path.join(TRANSFORMER_ALL_SUBJECTS, "transformer_input.json")  # Output
+INPUT_DATA_PATHS = [TRANSFORMER_ALL_SUBJECTS + subject + '/' + "transformer_input.json" for subject in os.listdir(TRANSFORMER_ALL_SUBJECTS)]  # Output
 
 # Define Feature Types
 FEATURE_TYPES = [
@@ -101,51 +102,78 @@ def embed_features(sensor_features, sensor_embedding, feature_type_embedding, si
     return combined_embeddings  # [batch_size, num_features + 1, LATENT_DIM]
 
 # Function to calculate Intersection over Union (IoU)
+# def calculate_iou(pred_boxes, true_boxes):
+#     """
+#     Calculates the Intersection over Union (IoU) between predicted and true bounding boxes.
+    
+#     Args:
+#         pred_boxes (torch.Tensor): Predicted bounding boxes [batch_size, 4] in [xmin, ymin, xmax, ymax] format.
+#         true_boxes (torch.Tensor): Ground truth bounding boxes [batch_size, 4] in [xmin, ymin, xmax, ymax] format.
+    
+#     Returns:
+#         torch.Tensor: IoU scores [batch_size].
+#     """
+#     # Calculate coordinates of intersection rectangles
+#     # print(pred_boxes.shape)
+#     # print(true_boxes.shape)
+#     inter_xmin = torch.max(pred_boxes[:, 0], true_boxes[:, 0])
+#     inter_ymin = torch.max(pred_boxes[:, 1], true_boxes[:, 1])
+#     inter_xmax = torch.min(pred_boxes[:, 2], true_boxes[:, 2])
+#     inter_ymax = torch.min(pred_boxes[:, 3], true_boxes[:, 3])
+    
+#     # Compute areas of intersection rectangles
+#     inter_width = (inter_xmax - inter_xmin).clamp(min=0)
+#     inter_height = (inter_ymax - inter_ymin).clamp(min=0)
+#     inter_area = inter_width * inter_height
+    
+#     # Compute areas of individual bounding boxes
+#     pred_area = (pred_boxes[:, 2] - pred_boxes[:, 0]).clamp(min=0) * (pred_boxes[:, 3] - pred_boxes[:, 1]).clamp(min=0)
+#     true_area = (true_boxes[:, 2] - true_boxes[:, 0]).clamp(min=0) * (true_boxes[:, 3] - true_boxes[:, 1]).clamp(min=0)
+    
+#     # Compute union area
+#     union_area = pred_area + true_area - inter_area + 1e-6  # Add small epsilon to avoid division by zero
+    
+#     # Compute IoU
+#     iou = inter_area / union_area
+    
+#     return iou
+
+
 def calculate_iou(pred_boxes, true_boxes):
-    """
-    Calculates the Intersection over Union (IoU) between predicted and true bounding boxes.
-    
-    Args:
-        pred_boxes (torch.Tensor): Predicted bounding boxes [batch_size, 4] in [xmin, ymin, xmax, ymax] format.
-        true_boxes (torch.Tensor): Ground truth bounding boxes [batch_size, 4] in [xmin, ymin, xmax, ymax] format.
-    
-    Returns:
-        torch.Tensor: IoU scores [batch_size].
-    """
-    # Calculate coordinates of intersection rectangles
-    # print(pred_boxes.shape)
-    # print(true_boxes.shape)
-    inter_xmin = torch.max(pred_boxes[:, 0], true_boxes[:, 0])
-    inter_ymin = torch.max(pred_boxes[:, 1], true_boxes[:, 1])
-    inter_xmax = torch.min(pred_boxes[:, 2], true_boxes[:, 2])
-    inter_ymax = torch.min(pred_boxes[:, 3], true_boxes[:, 3])
-    
-    # Compute areas of intersection rectangles
-    inter_width = (inter_xmax - inter_xmin).clamp(min=0)
-    inter_height = (inter_ymax - inter_ymin).clamp(min=0)
-    inter_area = inter_width * inter_height
-    
-    # Compute areas of individual bounding boxes
-    pred_area = (pred_boxes[:, 2] - pred_boxes[:, 0]).clamp(min=0) * (pred_boxes[:, 3] - pred_boxes[:, 1]).clamp(min=0)
-    true_area = (true_boxes[:, 2] - true_boxes[:, 0]).clamp(min=0) * (true_boxes[:, 3] - true_boxes[:, 1]).clamp(min=0)
-    
-    # Compute union area
-    union_area = pred_area + true_area - inter_area + 1e-6  # Add small epsilon to avoid division by zero
-    
-    # Compute IoU
-    iou = inter_area / union_area
-    
+    # coordinates of the area of intersection.
+    ix1 = np.maximum(true_boxes[0], pred_boxes[0])
+    iy1 = np.maximum(true_boxes[1], pred_boxes[1])
+    ix2 = np.minimum(true_boxes[2], pred_boxes[2])
+    iy2 = np.minimum(true_boxes[3], pred_boxes[3])
+     
+    # Intersection height and width.
+    i_height = np.maximum(iy2 - iy1 + 1, np.array(0.))
+    i_width = np.maximum(ix2 - ix1 + 1, np.array(0.))
+     
+    area_of_intersection = i_height * i_width
+     
+    # Ground Truth dimensions.
+    gt_height = true_boxes[3] - true_boxes[1] + 1
+    gt_width = true_boxes[2] - true_boxes[0] + 1
+     
+    # Prediction dimensions.
+    pd_height = pred_boxes[3] - pred_boxes[1] + 1
+    pd_width = pred_boxes[2] - pred_boxes[0] + 1
+     
+    area_of_union = gt_height * gt_width + pd_height * pd_width - area_of_intersection
+     
+    iou = area_of_intersection / area_of_union
+     
     return iou
 
 # Define the testing function
-def test_model(test_sensors, test_bboxes, test_side_flags, model, sensor_embedding, feature_type_embedding, bbox_embedding, regression_head, loss_fn):
+def test_model(test_sensors, test_bboxes, model, sensor_embedding, feature_type_embedding, bbox_embedding, regression_head, loss_fn):
     """
     Evaluates the model on the testing subset.
 
     Args:
         test_sensors (torch.Tensor): Testing sensor data [num_test_samples, num_features].
         test_bboxes (torch.Tensor): Testing bounding box data [num_test_samples, 4].
-        test_side_flags (torch.Tensor): Testing side flags [num_test_samples].
         model (nn.Module): The Perceiver model.
         sensor_embedding (nn.Module): Embedding layer for sensor data.
         feature_type_embedding (nn.Module): Embedding layer for feature types.
@@ -154,17 +182,15 @@ def test_model(test_sensors, test_bboxes, test_side_flags, model, sensor_embeddi
         loss_fn (nn.Module): Loss function.
 
     Returns:
-        tuple: (average_testing_loss, average_iou)
+        float: Average testing loss.
     """
     model.eval()
     total_loss = 0.0
-    total_iou = 0.0
-    total_samples = 0
 
     with torch.no_grad():
         for i in tqdm(range(0, len(test_sensors), BATCH_SIZE), desc="Testing"):
             batch_sensors = test_sensors[i:i + BATCH_SIZE].to(DEVICE)  # [BATCH_SIZE, num_features]
-            batch_bboxes = test_bboxes[i:i + BATCH_SIZE].to(DEVICE)    # [BATCH_SIZE, 4]
+            batch_bboxes = test_bboxes[i:i + BATCH_SIZE].to(DEVICE)  # [BATCH_SIZE, 4]
             batch_side_flags = test_side_flags[i:i + BATCH_SIZE].to(DEVICE)  # [BATCH_SIZE]
 
             # Embed features with feature-type embeddings and side flags
@@ -174,24 +200,25 @@ def test_model(test_sensors, test_bboxes, test_side_flags, model, sensor_embeddi
             # Reshape bbox_embedded to [BATCH_SIZE, 1, LATENT_DIM]
             bbox_embedded = torch.flatten(bbox_embedded.unsqueeze(1), 2)        # [BATCH_SIZE, 1, LATENT_DIM]
 
+            # print(sensor_embedded.shape)
+            # print(bbox_embedded.shape)
             # Concatenate sensor and bbox embeddings along the sequence dimension
             multimodal_input = torch.cat([sensor_embedded, bbox_embedded], dim=1)  # [BATCH_SIZE, num_features + 2, LATENT_DIM]
 
             # Forward pass
             outputs = model(inputs=multimodal_input)
             predicted_boxes = regression_head(outputs.last_hidden_state[:, :1, :])  # [BATCH_SIZE, 1, 4]
-            predicted_boxes = predicted_boxes.squeeze(1)  # [BATCH_SIZE, 4]
 
             # Compute loss
-            loss = loss_fn(predicted_boxes, batch_bboxes)  # [BATCH_SIZE, 4] vs [BATCH_SIZE, 4]
-            total_loss += loss.item() * batch_sensors.size(0)  # Accumulate loss weighted by batch size
+            loss = loss_fn(predicted_boxes.squeeze(1), batch_bboxes.squeeze(1))  # [BATCH_SIZE, 4] vs [BATCH_SIZE, 4]
+            total_loss += loss.item()
 
             # Compute IoU
             iou = calculate_iou(predicted_boxes, torch.flatten(batch_bboxes, 1))  # [BATCH_SIZE]
             total_iou += iou.sum().item()  # Accumulate IoU
             total_samples += batch_sensors.size(0)
 
-    average_loss = total_loss / total_samples
+    average_loss = total_loss / (len(test_sensors) / BATCH_SIZE)
     average_iou = total_iou / total_samples
     return average_loss, average_iou
 
@@ -222,8 +249,6 @@ def train_model(train_sensors, train_bboxes, train_side_flags, test_sensors, tes
     for epoch in range(epoch_start, epoch_end + 1):
         model.train()
         total_loss = 0.0
-        total_iou = 0.0
-        total_samples = 0
 
         # Shuffle the training data at the start of each epoch
         permutation = torch.randperm(train_sensors.size()[0])
@@ -234,7 +259,7 @@ def train_model(train_sensors, train_bboxes, train_side_flags, test_sensors, tes
         # Iterate through training batches
         for i in tqdm(range(0, len(train_sensors_shuffled), BATCH_SIZE), desc=f"Training Epoch {epoch}"):
             batch_sensors = train_sensors_shuffled[i:i + BATCH_SIZE].to(DEVICE)  # [BATCH_SIZE, num_features]
-            batch_bboxes = train_bboxes_shuffled[i:i + BATCH_SIZE].to(DEVICE)    # [BATCH_SIZE, 4]
+            batch_bboxes = train_bboxes_shuffled[i:i + BATCH_SIZE].to(DEVICE)  # [BATCH_SIZE, 4]
             batch_side_flags = train_side_flags_shuffled[i:i + BATCH_SIZE].to(DEVICE)  # [BATCH_SIZE]
 
             # Embed features with feature-type embeddings and side flags
@@ -242,7 +267,7 @@ def train_model(train_sensors, train_bboxes, train_side_flags, test_sensors, tes
             bbox_embedded = bbox_embedding(batch_bboxes)      # [BATCH_SIZE, LATENT_DIM]
 
             # Reshape bbox_embedded to [BATCH_SIZE, 1, LATENT_DIM]
-            bbox_embedded = torch.flatten(bbox_embedded.unsqueeze(1),2)        # [BATCH_SIZE, 1, LATENT_DIM]
+            bbox_embedded = torch.flatten(bbox_embedded.unsqueeze(1), 2)        # [BATCH_SIZE, 1, LATENT_DIM]
 
             # Concatenate sensor and bbox embeddings along the sequence dimension
             multimodal_input = torch.cat([sensor_embedded, bbox_embedded], dim=1)  # [BATCH_SIZE, num_features + 2, LATENT_DIM]
@@ -250,16 +275,12 @@ def train_model(train_sensors, train_bboxes, train_side_flags, test_sensors, tes
             # Forward pass
             outputs = model(inputs=multimodal_input)
             predicted_boxes = regression_head(outputs.last_hidden_state[:, :1, :])  # [BATCH_SIZE, 1, 4]
-            predicted_boxes = predicted_boxes.squeeze(1)  # [BATCH_SIZE, 4]
 
             # Compute loss
-            loss = loss_fn(predicted_boxes, batch_bboxes)  # [BATCH_SIZE, 4] vs [BATCH_SIZE, 4]
-            total_loss += loss.item() * batch_sensors.size(0)  # Accumulate loss weighted by batch size
-
-            # Compute IoU
-            iou = calculate_iou(predicted_boxes, torch.flatten(batch_bboxes, 1))  # [BATCH_SIZE]
-            total_iou += iou.sum().item()  # Accumulate IoU
-            total_samples += batch_sensors.size(0)
+            # print(predicted_boxes.shape)
+            # print(batch_bboxes.shape)
+            loss = loss_fn(predicted_boxes.squeeze(1), batch_bboxes.squeeze(1))  # [BATCH_SIZE, 4] vs [BATCH_SIZE, 4]
+            total_loss += loss.item()
 
             # Backpropagation
             optimizer.zero_grad()
@@ -270,15 +291,12 @@ def train_model(train_sensors, train_bboxes, train_side_flags, test_sensors, tes
 
             optimizer.step()
 
-        average_train_loss = total_loss / total_samples
-        average_train_iou = total_iou / total_samples
+        average_train_loss = total_loss / (len(train_sensors_shuffled) / BATCH_SIZE)
 
-        # After each epoch, compute test loss and IoU
-        test_loss, test_iou = test_model(test_sensors, test_bboxes, test_side_flags, model, sensor_embedding, feature_type_embedding, bbox_embedding, regression_head, loss_fn)
+        # After each epoch, compute test loss
+        test_loss = test_model(test_sensors, test_bboxes, model, sensor_embedding, feature_type_embedding, bbox_embedding, regression_head, loss_fn)
 
-        print(f"Epoch {epoch}/{epoch_end}, "
-              f"Training Loss: {average_train_loss:.4f}, Training IoU: {average_train_iou:.4f}, "
-              f"Testing Loss: {test_loss:.4f}, Testing IoU: {test_iou:.4f}")
+        print(f"Epoch {epoch}/{epoch_end}, Training Loss: {average_train_loss:.4f}, Testing Loss: {test_loss:.4f}")
 
 # Load and Process Data
 def load_and_combine_data(input_path):
@@ -289,7 +307,7 @@ def load_and_combine_data(input_path):
         input_path (str): Path to the JSON file containing combined data.
 
     Returns:
-        tuple: Combined sensors, bounding boxes, and side flags.
+        tuple: Combined sensors and bounding boxes.
     """
     with open(input_path, 'r') as f:
         data = json.load(f)
@@ -297,28 +315,44 @@ def load_and_combine_data(input_path):
     # Separate `_left` and `_right`
     left_data = [entry for entry in data if entry["side"] == "left"]
     right_data = [entry for entry in data if entry["side"] == "right"]
+    full_data = [entry for entry in data if entry["side"] == "full"]
+
+    if len(full_data) > 0 and len(left_data) > 0:
+        raise ValueError('There is a problem in the transformer input data')
 
     # Extract features and labels
     left_sensors = torch.tensor([entry["features"] for entry in left_data], dtype=torch.float32)
     left_bboxes = torch.tensor([entry["bounding_boxes"] for entry in left_data], dtype=torch.float32)
     right_sensors = torch.tensor([entry["features"] for entry in right_data], dtype=torch.float32)
     right_bboxes = torch.tensor([entry["bounding_boxes"] for entry in right_data], dtype=torch.float32)
+    full_sensors = torch.tensor([entry["features"] for entry in full_data], dtype=torch.float32)
+    full_bboxes = torch.tensor([entry["bounding_boxes"] for entry in full_data], dtype=torch.float32)
 
     # Create side flags: 0 for left, 1 for right
     left_side_flags = torch.zeros(left_sensors.size(0), dtype=torch.long)  # [num_left]
     right_side_flags = torch.ones(right_sensors.size(0), dtype=torch.long)  # [num_right]
+    full_side_flags = torch.ones(full_sensors.size(0), dtype=torch.long)  # [num_right]
 
     # Combine sensors, bboxes, and side flags
-    combined_sensors = torch.cat([left_sensors, right_sensors], dim=0)      # [num_left + num_right, num_features]
-    combined_bboxes = torch.cat([left_bboxes, right_bboxes], dim=0)        # [num_left + num_right, 4]
-    combined_side_flags = torch.cat([left_side_flags, right_side_flags], dim=0)  # [num_left + num_right]
+    combined_sensors = torch.cat([left_sensors, right_sensors, full_sensors], dim=0)      # [num_left + num_right, num_features]
+    combined_bboxes = torch.cat([left_bboxes, right_bboxes, full_bboxes], dim=0)        # [num_left + num_right, 4]
+    combined_side_flags = torch.cat([left_side_flags, right_side_flags, full_side_flags], dim=0)  # [num_left + num_right]
 
     return combined_sensors, combined_bboxes, combined_side_flags
 
 # Main Execution
 if __name__ == "__main__":
     # Load and combine data
-    combined_sensors, combined_bboxes, combined_side_flags = load_and_combine_data(INPUT_DATA_PATH)
+    combined_sensors=torch.tensor([])
+    combined_bboxes=torch.tensor([]) 
+    combined_side_flags=torch.tensor([])
+    for path in INPUT_DATA_PATHS:
+        combined_sensors_path, combined_bboxes_path, combined_side_flags_path = load_and_combine_data(path)
+        combined_sensors = torch.cat((combined_sensors, combined_sensors_path), dim=0)
+        combined_bboxes = torch.cat((combined_bboxes, combined_bboxes_path), dim=0)
+        combined_side_flags = torch.cat((combined_side_flags, combined_side_flags_path), dim=0)
+        
+
 
     # Verify combined data sizes
     num_combined = combined_sensors.shape[0]
@@ -326,43 +360,49 @@ if __name__ == "__main__":
 
     # Split data into training and testing
     TEST_RATIO = 0.2  # 20% for testing
+    VAL_RATIO = 0.25
 
     # Function to split data into training and testing subsets
-    def split_data(sensors, bboxes, side_flags, test_ratio=0.2):
-        """
-        Splits the data into training and testing subsets.
+    # def split_data(sensors, bboxes, side_flags, test_ratio=0.2):
+    #     """
+    #     Splits the data into training and testing subsets.
 
-        Args:
-            sensors (torch.Tensor): Sensor data [num_samples, num_features].
-            bboxes (torch.Tensor): Bounding box data [num_samples, 4].
-            side_flags (torch.Tensor): Side flags [num_samples].
-            test_ratio (float): Proportion of data to use for testing.
+    #     Args:
+    #         sensors (torch.Tensor): Sensor data [num_samples, num_features].
+    #         bboxes (torch.Tensor): Bounding box data [num_samples, 4].
+    #         side_flags (torch.Tensor): Side flags [num_samples].
+    #         test_ratio (float): Proportion of data to use for testing.
 
-        Returns:
-            tuple: (train_sensors, train_bboxes, train_side_flags, test_sensors, test_bboxes, test_side_flags)
-        """
-        num_samples = sensors.shape[0]
-        indices = torch.randperm(num_samples)
+    #     Returns:
+    #         tuple: (train_sensors, train_bboxes, train_side_flags, test_sensors, test_bboxes, test_side_flags)
+    #     """
+    #     num_samples = sensors.shape[0]
+    #     indices = torch.randperm(num_samples)
 
-        test_size = int(num_samples * test_ratio)
-        train_size = num_samples - test_size
+    #     test_size = int(num_samples * test_ratio)
+    #     train_size = num_samples - test_size
 
-        train_indices = indices[:train_size]
-        test_indices = indices[train_size:]
+    #     train_indices = indices[:train_size]
+    #     test_indices = indices[train_size:]
 
-        train_sensors = sensors[train_indices]
-        train_bboxes = bboxes[train_indices]
-        train_side_flags = side_flags[train_indices]
-        test_sensors = sensors[test_indices]
-        test_bboxes = bboxes[test_indices]
-        test_side_flags = side_flags[test_indices]
+    #     train_sensors = sensors[train_indices]
+    #     train_bboxes = bboxes[train_indices]
+    #     train_side_flags = side_flags[train_indices]
+    #     test_sensors = sensors[test_indices]
+    #     test_bboxes = bboxes[test_indices]
+    #     test_side_flags = side_flags[test_indices]
 
-        return train_sensors, train_bboxes, train_side_flags, test_sensors, test_bboxes, test_side_flags
+    #     return train_sensors, train_bboxes, train_side_flags, test_sensors, test_bboxes, test_side_flags
 
     # Split the data
-    train_sensors, train_bboxes, train_side_flags, test_sensors, test_bboxes, test_side_flags = split_data(
-        combined_sensors, combined_bboxes, combined_side_flags, test_ratio=TEST_RATIO
+    train_sensors, test_sensors, train_bboxes, test_bboxes, train_side_flags, test_side_flags = train_test_split(
+        combined_sensors, combined_bboxes, combined_side_flags, test_size=TEST_RATIO
     )
+    
+    # train_sensors, validate_sensors, train_bboxes, validate_bboxes, train_side_flags, validate_side_flags = train_test_split(
+    #     sub_sensors, sub_bboxes, sub_side_flags, test_size=VAL_RATIO
+    # )
+
     print(f"Training samples: {train_sensors.shape[0]}, Testing samples: {test_sensors.shape[0]}")
 
     # Initialize single model and its components
