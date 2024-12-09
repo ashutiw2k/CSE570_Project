@@ -16,7 +16,8 @@ def mask_frame_alternately(input_dir, output_dir, suffix_left='_left', suffix_ri
     """
     # Configure logging
     logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
-    
+
+    # os.rmdir(output_dir)
     os.makedirs(output_dir, exist_ok=True)
     
     # Get a sorted list of image filenames to ensure consistent processing order
@@ -25,6 +26,9 @@ def mask_frame_alternately(input_dir, output_dir, suffix_left='_left', suffix_ri
         fname for fname in os.listdir(image_dir)
         if fname.lower().endswith(('.png', '.jpg', '.jpeg'))
     ])
+
+    # print(image_filenames)
+    # return
     
     if not image_filenames:
         logging.warning(f"No images found in {input_dir}.")
@@ -32,12 +36,14 @@ def mask_frame_alternately(input_dir, output_dir, suffix_left='_left', suffix_ri
     
     for idx, fname in enumerate(image_filenames):
         frame_path = os.path.join(input_dir, fname)
+        # print(frame_path)
+        
         img = cv2.imread(frame_path)
         
         if img is None:
             logging.error(f"Could not read file: {frame_path}")
             continue
-        
+        # continue
         h, w, c = img.shape
         
         # Create a copy of the image to apply masking
@@ -75,4 +81,4 @@ if __name__ == "__main__":
         output_image_dir = output_dir + subject
         # print(input_image_dir)
         # print(output_image_dir)
-        mask_frame_alternately(input_image_dir, output_image_dir, sequence_path=None)
+        mask_frame_alternately(input_image_dir, output_image_dir, sequence_path=sequence)

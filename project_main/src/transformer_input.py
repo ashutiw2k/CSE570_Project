@@ -40,6 +40,18 @@ for subject in os.listdir(SENSOR_ALL_SUBJECTS):
                 "bounding_boxes": [entry["bbox"] for entry in bbox_labels]  # List of bounding boxes
             })
 
+        # suffix='full'
+        # image_key = f"{timestamp}.png"
+        # bbox_labels = bbox_data.get(image_key, [{"bbox": [0, 0, 0, 0]}])  # Default to [0, 0, 0, 0] if missing
+
+        # # Add combined entry
+        # transformer_data.append({
+        #     "timestamp": timestamp,
+        #     "side": 'full',
+        #     "features": features,
+        #     "bounding_boxes": [entry["bbox"] for entry in bbox_labels]  # List of bounding boxes
+        # })
+
     # Save to output file
     with open(output_file, 'w') as f:
         json.dump(transformer_data, f, indent=4)

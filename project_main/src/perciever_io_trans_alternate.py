@@ -5,6 +5,7 @@ from transformers import PerceiverConfig, PerceiverModel
 import json
 import os
 from tqdm import tqdm
+from sklearn.model_selection import train_test_split
 
 # Configuration
 BATCH_SIZE = 16
@@ -144,7 +145,7 @@ def test_model(test_sensors, test_bboxes, model, sensor_embedding, feature_type_
             predicted_boxes = regression_head(outputs.last_hidden_state[:, :1, :])  # [BATCH_SIZE, 1, 4]
 
             # Compute loss
-            loss = loss_fn(predicted_boxes.squeeze(1), batch_bboxes)  # [BATCH_SIZE, 4] vs [BATCH_SIZE, 4]
+            loss = loss_fn(predicted_boxes.squeeze(1), batch_bboxes.squeeze(1))  # [BATCH_SIZE, 4] vs [BATCH_SIZE, 4]
             total_loss += loss.item()
 
     average_loss = total_loss / (len(test_sensors) / BATCH_SIZE)
@@ -205,7 +206,9 @@ def train_model(train_sensors, train_bboxes, train_side_flags, test_sensors, tes
             predicted_boxes = regression_head(outputs.last_hidden_state[:, :1, :])  # [BATCH_SIZE, 1, 4]
 
             # Compute loss
-            loss = loss_fn(predicted_boxes.squeeze(1), batch_bboxes)  # [BATCH_SIZE, 4] vs [BATCH_SIZE, 4]
+            # print(predicted_boxes.shape)
+            # print(batch_bboxes.shape)
+            loss = loss_fn(predicted_boxes.squeeze(1), batch_bboxes.squeeze(1))  # [BATCH_SIZE, 4] vs [BATCH_SIZE, 4]
             total_loss += loss.item()
 
             # Backpropagation
@@ -241,21 +244,28 @@ def load_and_combine_data(input_path):
     # Separate `_left` and `_right`
     left_data = [entry for entry in data if entry["side"] == "left"]
     right_data = [entry for entry in data if entry["side"] == "right"]
+    full_data = [entry for entry in data if entry["side"] == "full"]
+
+    if len(full_data) > 0 and len(left_data) > 0:
+        raise ValueError('There is a problem in the transformer input data')
 
     # Extract features and labels
     left_sensors = torch.tensor([entry["features"] for entry in left_data], dtype=torch.float32)
     left_bboxes = torch.tensor([entry["bounding_boxes"] for entry in left_data], dtype=torch.float32)
     right_sensors = torch.tensor([entry["features"] for entry in right_data], dtype=torch.float32)
     right_bboxes = torch.tensor([entry["bounding_boxes"] for entry in right_data], dtype=torch.float32)
+    full_sensors = torch.tensor([entry["features"] for entry in full_data], dtype=torch.float32)
+    full_bboxes = torch.tensor([entry["bounding_boxes"] for entry in full_data], dtype=torch.float32)
 
     # Create side flags: 0 for left, 1 for right
     left_side_flags = torch.zeros(left_sensors.size(0), dtype=torch.long)  # [num_left]
     right_side_flags = torch.ones(right_sensors.size(0), dtype=torch.long)  # [num_right]
+    full_side_flags = torch.ones(full_sensors.size(0), dtype=torch.long)  # [num_right]
 
     # Combine sensors, bboxes, and side flags
-    combined_sensors = torch.cat([left_sensors, right_sensors], dim=0)      # [num_left + num_right, num_features]
-    combined_bboxes = torch.cat([left_bboxes, right_bboxes], dim=0)        # [num_left + num_right, 4]
-    combined_side_flags = torch.cat([left_side_flags, right_side_flags], dim=0)  # [num_left + num_right]
+    combined_sensors = torch.cat([left_sensors, right_sensors, full_sensors], dim=0)      # [num_left + num_right, num_features]
+    combined_bboxes = torch.cat([left_bboxes, right_bboxes, full_bboxes], dim=0)        # [num_left + num_right, 4]
+    combined_side_flags = torch.cat([left_side_flags, right_side_flags, full_side_flags], dim=0)  # [num_left + num_right]
 
     return combined_sensors, combined_bboxes, combined_side_flags
 
@@ -279,43 +289,49 @@ if __name__ == "__main__":
 
     # Split data into training and testing
     TEST_RATIO = 0.2  # 20% for testing
+    VAL_RATIO = 0.25
 
     # Function to split data into training and testing subsets
-    def split_data(sensors, bboxes, side_flags, test_ratio=0.2):
-        """
-        Splits the data into training and testing subsets.
+    # def split_data(sensors, bboxes, side_flags, test_ratio=0.2):
+    #     """
+    #     Splits the data into training and testing subsets.
 
-        Args:
-            sensors (torch.Tensor): Sensor data [num_samples, num_features].
-            bboxes (torch.Tensor): Bounding box data [num_samples, 4].
-            side_flags (torch.Tensor): Side flags [num_samples].
-            test_ratio (float): Proportion of data to use for testing.
+    #     Args:
+    #         sensors (torch.Tensor): Sensor data [num_samples, num_features].
+    #         bboxes (torch.Tensor): Bounding box data [num_samples, 4].
+    #         side_flags (torch.Tensor): Side flags [num_samples].
+    #         test_ratio (float): Proportion of data to use for testing.
 
-        Returns:
-            tuple: (train_sensors, train_bboxes, train_side_flags, test_sensors, test_bboxes, test_side_flags)
-        """
-        num_samples = sensors.shape[0]
-        indices = torch.randperm(num_samples)
+    #     Returns:
+    #         tuple: (train_sensors, train_bboxes, train_side_flags, test_sensors, test_bboxes, test_side_flags)
+    #     """
+    #     num_samples = sensors.shape[0]
+    #     indices = torch.randperm(num_samples)
 
-        test_size = int(num_samples * test_ratio)
-        train_size = num_samples - test_size
+    #     test_size = int(num_samples * test_ratio)
+    #     train_size = num_samples - test_size
 
-        train_indices = indices[:train_size]
-        test_indices = indices[train_size:]
+    #     train_indices = indices[:train_size]
+    #     test_indices = indices[train_size:]
 
-        train_sensors = sensors[train_indices]
-        train_bboxes = bboxes[train_indices]
-        train_side_flags = side_flags[train_indices]
-        test_sensors = sensors[test_indices]
-        test_bboxes = bboxes[test_indices]
-        test_side_flags = side_flags[test_indices]
+    #     train_sensors = sensors[train_indices]
+    #     train_bboxes = bboxes[train_indices]
+    #     train_side_flags = side_flags[train_indices]
+    #     test_sensors = sensors[test_indices]
+    #     test_bboxes = bboxes[test_indices]
+    #     test_side_flags = side_flags[test_indices]
 
-        return train_sensors, train_bboxes, train_side_flags, test_sensors, test_bboxes, test_side_flags
+    #     return train_sensors, train_bboxes, train_side_flags, test_sensors, test_bboxes, test_side_flags
 
     # Split the data
-    train_sensors, train_bboxes, train_side_flags, test_sensors, test_bboxes, test_side_flags = split_data(
-        combined_sensors, combined_bboxes, combined_side_flags, test_ratio=TEST_RATIO
+    train_sensors, test_sensors, train_bboxes, test_bboxes, train_side_flags, test_side_flags = train_test_split(
+        combined_sensors, combined_bboxes, combined_side_flags, test_size=TEST_RATIO
     )
+    
+    # train_sensors, validate_sensors, train_bboxes, validate_bboxes, train_side_flags, validate_side_flags = train_test_split(
+    #     sub_sensors, sub_bboxes, sub_side_flags, test_size=VAL_RATIO
+    # )
+
     print(f"Training samples: {train_sensors.shape[0]}, Testing samples: {test_sensors.shape[0]}")
 
     # Initialize single model and its components
