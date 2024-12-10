@@ -9,7 +9,9 @@ write_dict = {}
 for seq in os.listdir(ALL_SEQUENCE_PATH):
     seq_path = ALL_SEQUENCE_PATH + seq
     write_dict.update({
-        f'seq{ctr}': list(os.listdir(seq_path))
+        f'seq{ctr}': { 
+            'sequence' : seq,
+            'timestamps':['.'.join(p.split('.')[0:2]) for p in os.listdir(seq_path)] }
     })
     ctr += 1
 
