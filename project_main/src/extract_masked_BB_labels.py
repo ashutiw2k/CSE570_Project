@@ -2,6 +2,7 @@ import json
 import os
 from PIL import Image
 from data import get_scene_synced_datasets, get_all_sequences_synced_dataset
+from torch.utils.data import ConcatDataset
 
 def extract_bounding_boxes(input_dir, output_file, dataset, visible_threshold=0.90):
     """
@@ -96,7 +97,18 @@ def filter_visible_boxes(boxes, size, mask_side, visible_threshold):
 if __name__ == "__main__":
     # Load synced datasets (replace this with your dataset loading logic)
     # datasets = get_scene_synced_datasets(full_path='Data/RAN4model_dfv4p4/seqs/indoor/scene0/20201223_140951')
-    datasets = get_all_sequences_synced_dataset()
+    sequences = ['seq0']
+    if len(sequences) != 0:
+        with open('project_main/data/files_in_sequence.json', 'r') as f:
+            sequence_data = json.load(f)
+        
+        sequence_paths = [val['sequence'] for seq, val in sequence_data.items() if seq in sequences]
+        
+        all_datasets = [get_scene_synced_datasets(sequence=seq) for seq in sequence_paths]
+        datasets = [ConcatDataset(list(col)) for col in zip(*all_datasets)]
+
+    else:
+        datasets = get_all_sequences_synced_dataset()
     
     
     input_dir = "project_main/data/Masked Images/"  # Directory containing masked images
