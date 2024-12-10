@@ -6,11 +6,12 @@ import json
 import os
 from tqdm import tqdm
 from sklearn.model_selection import train_test_split
+import numpy as np
 
 # Configuration
 BATCH_SIZE = 16
 LATENT_DIM = 256  # Ensure this matches d_model
-EPOCHS = 20
+EPOCHS = 30
 LEARNING_RATE = 1e-4
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -30,6 +31,36 @@ FEATURE_TYPES = [
 
 # Number of feature types
 NUM_FEATURE_TYPES = len(FEATURE_TYPES)
+
+def calculate_iou(pred_boxes, true_boxes):
+    # coordinates of the area of intersection.
+    pred_boxes = pred_boxes.to('cpu').detach().numpy()
+    true_boxes = true_boxes.to('cpu').detach().numpy()
+    ix1 = np.maximum(true_boxes[0], pred_boxes[0])
+    iy1 = np.maximum(true_boxes[1], pred_boxes[1])
+    ix2 = np.minimum(true_boxes[2], pred_boxes[2])
+    iy2 = np.minimum(true_boxes[3], pred_boxes[3])
+     
+    # Intersection height and width.
+    i_height = np.maximum(iy2 - iy1 + 1, np.array(0.))
+    i_width = np.maximum(ix2 - ix1 + 1, np.array(0.))
+     
+    area_of_intersection = i_height * i_width
+     
+    # Ground Truth dimensions.
+    gt_height = true_boxes[3] - true_boxes[1] + 1
+    gt_width = true_boxes[2] - true_boxes[0] + 1
+     
+    # Prediction dimensions.
+    pd_height = pred_boxes[3] - pred_boxes[1] + 1
+    pd_width = pred_boxes[2] - pred_boxes[0] + 1
+     
+    area_of_union = gt_height * gt_width + pd_height * pd_width - area_of_intersection
+     
+    iou = area_of_intersection / area_of_union
+     
+    return iou
+
 
 # Function to initialize the model and its components
 def initialize_model(latent_dim, num_feature_types):
@@ -121,6 +152,8 @@ def test_model(test_sensors, test_bboxes, model, sensor_embedding, feature_type_
     """
     model.eval()
     total_loss = 0.0
+    total_iou = 0.0
+    total_samples = 0.0
 
     with torch.no_grad():
         for i in tqdm(range(0, len(test_sensors), BATCH_SIZE), desc="Testing"):
@@ -148,8 +181,14 @@ def test_model(test_sensors, test_bboxes, model, sensor_embedding, feature_type_
             loss = loss_fn(predicted_boxes.squeeze(1), batch_bboxes.squeeze(1))  # [BATCH_SIZE, 4] vs [BATCH_SIZE, 4]
             total_loss += loss.item()
 
+            # Compute IoU
+            iou = calculate_iou(predicted_boxes, torch.flatten(batch_bboxes, 1))  # [BATCH_SIZE]
+            total_iou += iou.sum().item()  # Accumulate IoU
+            total_samples += batch_sensors.size(0)
+
     average_loss = total_loss / (len(test_sensors) / BATCH_SIZE)
-    return average_loss
+    average_iou = total_iou / total_samples
+    return average_loss, average_iou
 
 # Define the training function
 def train_model(train_sensors, train_bboxes, train_side_flags, test_sensors, test_bboxes, test_side_flags,
@@ -178,6 +217,8 @@ def train_model(train_sensors, train_bboxes, train_side_flags, test_sensors, tes
     for epoch in range(epoch_start, epoch_end + 1):
         model.train()
         total_loss = 0.0
+        total_iou = 0.0
+        total_samples = 0.0
 
         # Shuffle the training data at the start of each epoch
         permutation = torch.randperm(train_sensors.size()[0])
@@ -211,6 +252,11 @@ def train_model(train_sensors, train_bboxes, train_side_flags, test_sensors, tes
             loss = loss_fn(predicted_boxes.squeeze(1), batch_bboxes.squeeze(1))  # [BATCH_SIZE, 4] vs [BATCH_SIZE, 4]
             total_loss += loss.item()
 
+            # Compute IoU
+            iou = calculate_iou(predicted_boxes, torch.flatten(batch_bboxes, 1))  # [BATCH_SIZE]
+            total_iou += iou.sum().item()  # Accumulate IoU
+            total_samples += batch_sensors.size(0)
+
             # Backpropagation
             optimizer.zero_grad()
             loss.backward()
@@ -221,11 +267,12 @@ def train_model(train_sensors, train_bboxes, train_side_flags, test_sensors, tes
             optimizer.step()
 
         average_train_loss = total_loss / (len(train_sensors_shuffled) / BATCH_SIZE)
+        average_train_iou = total_iou / total_samples
 
         # After each epoch, compute test loss
-        test_loss = test_model(test_sensors, test_bboxes, model, sensor_embedding, feature_type_embedding, bbox_embedding, regression_head, loss_fn)
+        test_loss, test_iou = test_model(test_sensors, test_bboxes, model, sensor_embedding, feature_type_embedding, bbox_embedding, regression_head, loss_fn)
 
-        print(f"Epoch {epoch}/{epoch_end}, Training Loss: {average_train_loss:.4f}, Testing Loss: {test_loss:.4f}")
+        print(f"Epoch {epoch}/{epoch_end}, Training Loss: {average_train_loss:.4f}, Training IoU: {average_train_iou:.4f}, Testing Loss: {test_loss:.4f}, Testing IoU: {test_iou:.4f}")
 
 # Load and Process Data
 def load_and_combine_data(input_path):

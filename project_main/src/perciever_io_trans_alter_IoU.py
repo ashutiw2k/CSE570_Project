@@ -142,6 +142,8 @@ def embed_features(sensor_features, sensor_embedding, feature_type_embedding, si
 
 def calculate_iou(pred_boxes, true_boxes):
     # coordinates of the area of intersection.
+    pred_boxes = pred_boxes.to('cpu').detach().numpy()
+    true_boxes = true_boxes.to('cpu').detach().numpy()
     ix1 = np.maximum(true_boxes[0], pred_boxes[0])
     iy1 = np.maximum(true_boxes[1], pred_boxes[1])
     ix2 = np.minimum(true_boxes[2], pred_boxes[2])
@@ -187,7 +189,8 @@ def test_model(test_sensors, test_bboxes, model, sensor_embedding, feature_type_
     """
     model.eval()
     total_loss = 0.0
-
+    total_iou = 0.0
+    total_samples = 0.0
     with torch.no_grad():
         for i in tqdm(range(0, len(test_sensors), BATCH_SIZE), desc="Testing"):
             batch_sensors = test_sensors[i:i + BATCH_SIZE].to(DEVICE)  # [BATCH_SIZE, num_features]
@@ -211,7 +214,7 @@ def test_model(test_sensors, test_bboxes, model, sensor_embedding, feature_type_
             predicted_boxes = regression_head(outputs.last_hidden_state[:, :1, :])  # [BATCH_SIZE, 1, 4]
 
             # Compute loss
-            loss = loss_fn(predicted_boxes, batch_bboxes.squeeze(1))  # [BATCH_SIZE, 4] vs [BATCH_SIZE, 4]
+            loss = loss_fn(predicted_boxes.squeeze(1), batch_bboxes.squeeze(1))  # [BATCH_SIZE, 4] vs [BATCH_SIZE, 4]
             total_loss += loss.item() * batch_sensors.size(0)  # Accumulate loss weighted by batch size
 
             # Compute IoU
@@ -250,7 +253,8 @@ def train_model(train_sensors, train_bboxes, train_side_flags, test_sensors, tes
     for epoch in range(epoch_start, epoch_end + 1):
         model.train()
         total_loss = 0.0
-
+        total_iou = 0.0
+        total_samples = 0.0
         # Shuffle the training data at the start of each epoch
         permutation = torch.randperm(train_sensors.size()[0])
         train_sensors_shuffled = train_sensors[permutation]
@@ -278,7 +282,7 @@ def train_model(train_sensors, train_bboxes, train_side_flags, test_sensors, tes
             predicted_boxes = regression_head(outputs.last_hidden_state[:, :1, :])  # [BATCH_SIZE, 1, 4]
 
             # Compute loss
-            loss = loss_fn(predicted_boxes, batch_bboxes.squeeze(1))  # [BATCH_SIZE, 4] vs [BATCH_SIZE, 4]
+            loss = loss_fn(predicted_boxes.squeeze(1), batch_bboxes.squeeze(1))  # [BATCH_SIZE, 4] vs [BATCH_SIZE, 4]
             total_loss += loss.item() * batch_sensors.size(0)  # Accumulate loss weighted by batch size
 
             # Compute IoU
@@ -296,11 +300,12 @@ def train_model(train_sensors, train_bboxes, train_side_flags, test_sensors, tes
             optimizer.step()
 
         average_train_loss = total_loss / (len(train_sensors_shuffled) / BATCH_SIZE)
+        average_train_iou = total_iou / total_samples
 
         # After each epoch, compute test loss
-        test_loss = test_model(test_sensors, test_bboxes, model, sensor_embedding, feature_type_embedding, bbox_embedding, regression_head, loss_fn)
+        test_loss, iou_loss = test_model(test_sensors, test_bboxes, model, sensor_embedding, feature_type_embedding, bbox_embedding, regression_head, loss_fn)
 
-        print(f"Epoch {epoch}/{epoch_end}, Training Loss: {average_train_loss:.4f}, Testing Loss: {test_loss:.4f}")
+        print(f"Epoch {epoch}/{epoch_end}, Training Loss: {average_train_loss:.4f}, Training IoU: {average_train_iou:.4f}, Testing Loss: {test_loss:.4f}, Testing IoU: {iou_loss:.4f}")
 
 # Load and Process Data
 def load_and_combine_data(input_path):
