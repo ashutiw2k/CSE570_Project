@@ -11,7 +11,7 @@ for seq in sorted(os.listdir(ALL_SEQUENCE_PATH)):
     write_dict.update({
         f'seq{ctr}': { 
             'sequence' : seq,
-            'timestamps':['.'.join(p.split('.')[0:2]) for p in sorted(os.listdir(seq_path)) if p.endswith('.png')] }
+            'timestamps':['.'.join(p.split('.')[0:3]) for p in sorted(os.listdir(seq_path)) if p.endswith('.png')] }
     })
     ctr += 1
 
