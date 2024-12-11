@@ -14,7 +14,7 @@ def calculate_centroid(bbox):
     return [centroid_x, centroid_y]
 
 # Iterate over each subject
-for subject in os.listdir(BB_LABELS_ALL_SUBJECTS):
+for subject in sorted(os.listdir(BB_LABELS_ALL_SUBJECTS)):
     bbox_file = os.path.join(BB_LABELS_ALL_SUBJECTS, subject, "bounding_boxes.json")
     output_file = os.path.join(TRANSFORMER_ALL_SUBJECTS, subject, "centroids.json")
     sensor_file = os.path.join(TRANSFORMER_ALL_SUBJECTS, subject, "transformer_sensor_input.json")
@@ -60,7 +60,8 @@ for subject in os.listdir(BB_LABELS_ALL_SUBJECTS):
             bbox_labels = bbox_data.get(image_key)
 
             centroid = None
-            if bbox_labels and bbox_labels != [{"bbox": [0, 0, 0, 0]}]:
+            # if bbox_labels and bbox_labels != [{"bbox": [0, 0, 0, 0]}]:
+            if bbox_labels : # Removing as now we have a trained model
                 # Assuming there's only one bounding box per image
                 bbox = bbox_labels[0].get("bbox")
                 if bbox and isinstance(bbox, list) and len(bbox) == 4:

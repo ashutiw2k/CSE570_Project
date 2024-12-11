@@ -6,7 +6,7 @@ import os
 IMU_ALL_SUBJECTS= 'project_main/data/Testing/IMU Json/'
 WIFI_ALL_SUBJECTS= 'project_main/data/Testing/Wifi Json/'
 
-for subject in os.listdir(IMU_ALL_SUBJECTS):
+for subject in sorted(os.listdir(IMU_ALL_SUBJECTS)):
 
     imu_file = IMU_ALL_SUBJECTS + subject + '/' + "imuagm9.json"  # IMU data file
     wifi_ftm_file = WIFI_ALL_SUBJECTS + subject + '/' + "wifi_ftm.json"  # WiFi FTM data file

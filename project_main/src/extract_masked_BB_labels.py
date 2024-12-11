@@ -4,6 +4,8 @@ from PIL import Image
 from data import get_scene_synced_datasets, get_all_sequences_synced_dataset
 from torch.utils.data import ConcatDataset
 
+from save_sensor_data import NpEncoder
+
 def extract_bounding_boxes(input_dir, output_file, dataset, visible_threshold=0.90):
     """
     Extracts bounding boxes from the provided dataset and saves them to a JSON file.
@@ -43,54 +45,54 @@ def extract_bounding_boxes(input_dir, output_file, dataset, visible_threshold=0.
             mask_side = 'left' if '_left' in fname else 'right'
 
             # Filter bounding boxes based on visibility
-            visible_boxes = filter_visible_boxes(converted_boxes, img_size, mask_side, visible_threshold)
+            # visible_boxes = filter_visible_boxes(converted_boxes, img_size, mask_side, visible_threshold)
 
             # Save filtered bounding boxes for the current image
             annotations[fname] = []
-            for box in visible_boxes:
+            for box in converted_boxes:
                 annotations[fname].append({
                     'bbox': box  # [xmin, ymin, xmax, ymax]
                 })
 
     # Save all annotations to the output file
     with open(output_file, 'w') as f:
-        json.dump(annotations, f, indent=4)
+        json.dump(annotations, f, indent=4, cls=NpEncoder)
     print(f"Bounding boxes saved to {output_file}")
 
 
-def filter_visible_boxes(boxes, size, mask_side, visible_threshold):
-    """
-    Filters bounding boxes to include only those with at least a given percentage of their area
-    in the visible zone. Excludes boxes entirely in the masked zone.
+# def filter_visible_boxes(boxes, size, mask_side, visible_threshold):
+#     """
+#     Filters bounding boxes to include only those with at least a given percentage of their area
+#     in the visible zone. Excludes boxes entirely in the masked zone.
 
-    Args:
-        boxes (list): List of bounding boxes [xmin, ymin, xmax, ymax].
-        size (tuple): Original image size (width, height).
-        mask_side (str): 'left' or 'right', indicating the side masked in the image.
-        visible_threshold (float): Minimum percentage of the box area in the visible zone.
+#     Args:
+#         boxes (list): List of bounding boxes [xmin, ymin, xmax, ymax].
+#         size (tuple): Original image size (width, height).
+#         mask_side (str): 'left' or 'right', indicating the side masked in the image.
+#         visible_threshold (float): Minimum percentage of the box area in the visible zone.
 
-    Returns:
-        list: Filtered bounding boxes.
-    """
-    img_w, img_h = size
-    visible_boxes = []
+#     Returns:
+#         list: Filtered bounding boxes.
+#     """
+#     img_w, img_h = size
+#     visible_boxes = []
 
-    for box in boxes:
-        xmin, ymin, xmax, ymax = box
-        box_area = (xmax - xmin) * (ymax - ymin)
+#     for box in boxes:
+#         xmin, ymin, xmax, ymax = box
+#         box_area = (xmax - xmin) * (ymax - ymin)
 
-        if mask_side == 'left':
-            visible_area = max(0, xmax - img_w // 2) * (ymax - ymin)
-        else:  # 'right'
-            visible_area = max(0, img_w // 2 - xmin) * (ymax - ymin)
+#         if mask_side == 'left':
+#             visible_area = max(0, xmax - img_w // 2) * (ymax - ymin)
+#         else:  # 'right'
+#             visible_area = max(0, img_w // 2 - xmin) * (ymax - ymin)
 
-        # Check visible area ratio
-        if visible_area / box_area >= visible_threshold:
-            visible_boxes.append(box)
-        else:
-            visible_boxes.append([0,0,0,0])
+#         # Check visible area ratio
+#         if visible_area / box_area >= visible_threshold:
+#             visible_boxes.append(box)
+#         else:
+#             visible_boxes.append([0,0,0,0])
 
-    return visible_boxes
+#     return visible_boxes
 
 
 
