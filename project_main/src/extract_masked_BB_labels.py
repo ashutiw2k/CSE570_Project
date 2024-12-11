@@ -97,7 +97,7 @@ def filter_visible_boxes(boxes, size, mask_side, visible_threshold):
 if __name__ == "__main__":
     # Load synced datasets (replace this with your dataset loading logic)
     # datasets = get_scene_synced_datasets(full_path='Data/RAN4model_dfv4p4/seqs/indoor/scene0/20201223_140951')
-    sequences = ['seq0']
+    sequences = [f'seq{i}' for i in range(12,15)]
     if len(sequences) != 0:
         with open('project_main/data/files_in_sequence.json', 'r') as f:
             sequence_data = json.load(f)
@@ -111,8 +111,8 @@ if __name__ == "__main__":
         datasets = get_all_sequences_synced_dataset()
     
     
-    input_dir = "project_main/data/Masked Images/"  # Directory containing masked images
-    output_dir = "project_main/data/Masked BB Labels/"
+    input_dir = "project_main/data/Testing/Masked Images/"  # Directory containing masked images
+    output_dir = "project_main/data/Testing/Masked BB Labels/"
     output_file = "bounding_boxes.json"  # File to save bounding box annotations
 
     ctr = 0

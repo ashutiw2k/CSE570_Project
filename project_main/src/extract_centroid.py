@@ -3,8 +3,8 @@ import json
 import matplotlib.pyplot as plt
 
 # Define your directory paths
-BB_LABELS_ALL_SUBJECTS = "project_main/data/Masked BB Labels/"
-TRANSFORMER_ALL_SUBJECTS = "project_main/data/Transformer Input/"
+BB_LABELS_ALL_SUBJECTS = "project_main/data/Testing/Masked BB Labels/"
+TRANSFORMER_ALL_SUBJECTS = "project_main/data/Testing/Transformer Input/"
 
 # Function to calculate centroid from bounding box
 def calculate_centroid(bbox):

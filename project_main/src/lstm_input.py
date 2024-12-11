@@ -2,9 +2,9 @@ import json
 import os
 
 # Paths to data files
-CENTROID_LABELS_ALL_SUBJECTS= 'project_main/data/Transformer Input/'
-SENSOR_ALL_SUBJECTS= 'project_main/data/Transformer Input/'
-TRANSFORMER_ALL_SUBJECTS= 'project_main/data/Transformer Input/'
+CENTROID_LABELS_ALL_SUBJECTS= 'project_main/data/Testing/Transformer Input/'
+SENSOR_ALL_SUBJECTS= 'project_main/data/Testing/Transformer Input/'
+TRANSFORMER_ALL_SUBJECTS= 'project_main/data/Testing/Transformer Input/'
 
 
 def extract_unique_timestamps(centroids_data):

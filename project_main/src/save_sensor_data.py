@@ -6,8 +6,8 @@ import json
 
 from torch.utils.data import ConcatDataset
 
-WIFI_PATH = 'project_main/data/Wifi Json'
-IMU_PATH = 'project_main/data/IMU Json'
+WIFI_PATH = 'project_main/data/Testing/Wifi Json'
+IMU_PATH = 'project_main/data/Testing/IMU Json'
 
 class NpEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -21,7 +21,7 @@ class NpEncoder(json.JSONEncoder):
             return super(NpEncoder, self).default(obj)
 
 if __name__ == '__main__':
-    sequences = ['seq0']
+    sequences = [f'seq{i}' for i in range(12,15)]
     if len(sequences) != 0:
         with open('project_main/data/files_in_sequence.json', 'r') as f:
             sequence_data = json.load(f)

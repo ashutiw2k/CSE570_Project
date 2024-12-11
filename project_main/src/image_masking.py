@@ -63,14 +63,13 @@ def mask_frame_alternately(input_dir, output_dir, suffix_left='_left', suffix_ri
         img_masked = img.copy()
         
         # Determine which half to mask based on the image index
-        if idx % 2 == 0:
+        # if idx % 2 == 0:
             # Even index (starting from 0): Mask the right half
-            img_masked[:, w//2:, :] = 0
-            suffix = suffix_right
-        else:
-            # Odd index: Mask the left half
-            img_masked[:, :w//2, :] = 0
-            suffix = suffix_left
+        # img_masked[:, w//2:, :] = 0
+        # suffix = suffix_right
+
+        img_masked[:, :w//2, :] = 0
+        suffix = suffix_left
         
         # Construct the output filename with the appropriate suffix
         base_name, ext = os.path.splitext(fname)
@@ -87,11 +86,11 @@ def mask_frame_alternately(input_dir, output_dir, suffix_left='_left', suffix_ri
 # Example Usage
 if __name__ == "__main__":
     input_dir = "project_main/data/Annotated Images From Pickle/"  # Directory containing annotated images
-    output_dir = "project_main/data/Masked Images/"               # Directory to save masked images
-    sequence = ['seq0']
+    output_dir = "project_main/data/Testing/Masked Images/"               # Directory to save masked images
+    sequences = [f'seq{i}' for i in range(12,15)]
     for subject in os.listdir(input_dir):
         input_image_dir = input_dir + subject
         output_image_dir = output_dir + subject
         # print(input_image_dir)
         # print(output_image_dir)
-        mask_frame_alternately(input_image_dir, output_image_dir, sequence=sequence)
+        mask_frame_alternately(input_image_dir, output_image_dir, sequence=sequences)

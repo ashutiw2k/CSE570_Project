@@ -3,15 +3,15 @@ import numpy as np
 import os
 
 # Paths to data files
-IMU_ALL_SUBJECTS= 'project_main/data/IMU Json/'
-WIFI_ALL_SUBJECTS= 'project_main/data/Wifi Json/'
+IMU_ALL_SUBJECTS= 'project_main/data/Testing/IMU Json/'
+WIFI_ALL_SUBJECTS= 'project_main/data/Testing/Wifi Json/'
 
 for subject in os.listdir(IMU_ALL_SUBJECTS):
 
     imu_file = IMU_ALL_SUBJECTS + subject + '/' + "imuagm9.json"  # IMU data file
     wifi_ftm_file = WIFI_ALL_SUBJECTS + subject + '/' + "wifi_ftm.json"  # WiFi FTM data file
     wifi_rssi_file = WIFI_ALL_SUBJECTS + subject + '/' + "wifi_rssi.json"  # WiFi RSSI data file
-    output_file = f"project_main/data/Transformer Input/{subject}/transformer_sensor_input.json"  # Output file for transformer input
+    output_file = f"project_main/data/Testing/Transformer Input/{subject}/transformer_sensor_input.json"  # Output file for transformer input
 
     # print(imu_file)
     # print(wifi_ftm_file)
