@@ -5,6 +5,7 @@ import pandas as pd
 import joblib
 from sklearn.linear_model import LinearRegression, Ridge
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 import matplotlib.pyplot as plt
 
@@ -194,33 +195,46 @@ def main():
     Main function to execute the prediction workflow.
     """
     # Define file paths
-    SENSOR_JSON_PATH = 'data/Filtered Transformer Input/subject1/lstm_sensor_input.json'  # Update as needed
-    CENTROIDS_JSON_PATH = 'data/Centroids/subject1/centroids.json'  # Update as needed
+    DATAFILE_PATH = 'project_main/data/Testing/Transformer Input/'
+    SENSOR_JSON_PATH = 'lstm_sensor_input.json'  # Update as needed
+    CENTROIDS_JSON_PATH = 'centroids.json'  # Update as needed
     
-    # Define model and scaler paths
-    MODELS_DIR = 'models/'
+    # Define output directories
+    # PLOTS_DIR = 'plots/'
+    MODELS_DIR = 'project_main/models/'
+    # SCALERS_DIR = 'scalers/'
+    # os.makedirs(PLOTS_DIR, exist_ok=True)
+    os.makedirs(MODELS_DIR, exist_ok=True)
+    
+    merge_df_list = []
     # SCALERS_DIR = 'scalers/'
     linear_model_path = os.path.join(MODELS_DIR, 'linear_regression_model.joblib')
     ridge_model_path = os.path.join(MODELS_DIR, 'ridge_regression_model.joblib')
     # scaler_path = os.path.join(SCALERS_DIR, 'standard_scaler.pkl')
     
     # Define output directories
-    PREDICTIONS_DIR = 'predictions/'
-    PLOTS_DIR = 'plots/'
+    PREDICTIONS_DIR = 'project_main/predictions/'
+    # PLOTS_DIR = 'plots/'
     os.makedirs(PREDICTIONS_DIR, exist_ok=True)
-    os.makedirs(PLOTS_DIR, exist_ok=True)
+    # os.makedirs(PLOTS_DIR, exist_ok=True)
     
     # Step 1: Load sensor data
-    sensor_df = load_sensor_data(SENSOR_JSON_PATH)
-    print("Sensor data loaded successfully.")
-    
-    # Step 2: Load centroid data
-    centroid_df = load_centroid_data(CENTROIDS_JSON_PATH)
-    print("Centroid data loaded successfully.")
-    
-    # Step 3: Merge data
-    merged_df = merge_data(sensor_df, centroid_df)
-    print(f"Merged data contains {len(merged_df)} records.")
+    for sub in os.listdir(DATAFILE_PATH):
+        # Step 1: Load sensor data
+        sensor_df = load_sensor_data(DATAFILE_PATH + sub + '/' + SENSOR_JSON_PATH)
+        print("Sensor data loaded successfully.")
+        
+        # Step 2: Load centroid data
+        centroid_df = load_centroid_data(DATAFILE_PATH + sub + '/' + CENTROIDS_JSON_PATH)
+        print("Centroid data loaded successfully.")
+        
+        # Step 3: Merge data
+        merged_df = merge_data(sensor_df, centroid_df)
+        print(f"Merged data contains {len(merged_df)} records.")
+
+        merge_df_list.append(merged_df)
+
+    merged_df = pd.concat(merge_df_list)
     
     # Step 4: Prepare features and targets
     X, y = prepare_features_targets(merged_df)
@@ -276,17 +290,30 @@ def main():
     # Step 12: Save Predictions to CSV
     predictions_df = pd.DataFrame({
         'timestamp': merged_df['timestamp'],
-        'actual_centroid_x': y['centroid_x'],
-        'actual_centroid_y': y['centroid_y'],
+        'centroid_x': y['centroid_x'],
+        'centroid_y': y['centroid_y'],
         'predicted_centroid_x_linear': y_pred_lin[:, 0],
         'predicted_centroid_y_linear': y_pred_lin[:, 1],
         'predicted_centroid_x_ridge': y_pred_ridge[:, 0],
         'predicted_centroid_y_ridge': y_pred_ridge[:, 1]
     })
     
-    output_csv_path = os.path.join(PREDICTIONS_DIR, 'subject1_predictions_regression.csv')
+    output_csv_path = os.path.join(PREDICTIONS_DIR, 'predictions_regression.csv')
     predictions_df.to_csv(output_csv_path, index=False)
     print(f"Predictions saved to {output_csv_path}")
+
+    ctr = 0
+    for df in merge_df_list:
+        pred_sub_df = pd.merge(predictions_df, df, 
+                               on=['timestamp', 'centroid_x', 'centroid_y'], how='inner')
+        
+        pred_sub_df = pred_sub_df.drop([f'feature_{i+1}' for i in range(12)], axis=1)
+        
+        pred_sub_df.to_csv(PREDICTIONS_DIR + f'Subject{ctr}/' + 'predictions_regression.csv', index=False)
+
+        ctr += 1
+
+        
     
     # # Step 13: Plot Predictions for Linear Regression
     # plot_predictions(y.values, y_pred_lin, model_name='Linear Regression', subject='subject1')
@@ -310,10 +337,10 @@ def main():
     #     }
     # }
     
-    metrics_path = os.path.join(PREDICTIONS_DIR, 'regression_evaluation_metrics.json')
-    with open(metrics_path, 'w') as f:
-        json.dump(metrics, f, indent=4)
-    print(f"Evaluation metrics saved to {metrics_path}")
+    # metrics_path = os.path.join(PREDICTIONS_DIR, 'regression_evaluation_metrics.json')
+    # with open(metrics_path, 'w') as f:
+    #     json.dump(metrics, f, indent=4)
+    # print(f"Evaluation metrics saved to {metrics_path}")
     
     # Optional: Save the predictions plot
     # (Already handled in plot_predictions function)

@@ -189,71 +189,77 @@ def evaluate_model(model, X_test, y_test, model_name='Model'):
     
     return {'MSE': mse, 'RMSE': rmse, 'MAE': mae, 'R2': r2, 'y_pred': y_pred}
 
-def plot_predictions(y_test, y_pred, model_name='Model', subject='subject1'):
-    """
-    Plot actual vs. predicted centroid coordinates.
+# def plot_predictions(y_test, y_pred, model_name='Model', subject='subject1'):
+#     """
+#     Plot actual vs. predicted centroid coordinates.
 
-    Args:
-        y_test (np.ndarray): Actual centroid coordinates.
-        y_pred (np.ndarray): Predicted centroid coordinates.
-        model_name (str): Name of the model for labeling.
-        subject (str): Subject identifier for plot title.
+#     Args:
+#         y_test (np.ndarray): Actual centroid coordinates.
+#         y_pred (np.ndarray): Predicted centroid coordinates.
+#         model_name (str): Name of the model for labeling.
+#         subject (str): Subject identifier for plot title.
 
-    Returns:
-        None
-    """
-    plt.figure(figsize=(12, 6))
+#     Returns:
+#         None
+#     """
+#     plt.figure(figsize=(12, 6))
     
-    # Plot for X Coordinate
-    plt.subplot(1, 2, 1)
-    plt.scatter(y_test[:, 0], y_pred[:, 0], alpha=0.5, color='blue')
-    plt.plot([y_test[:, 0].min(), y_test[:, 0].max()], [y_test[:, 0].min(), y_test[:, 0].max()], 'r--')
-    plt.xlabel('Actual X')
-    plt.ylabel('Predicted X')
-    plt.title(f'{model_name}: Actual vs Predicted X (Subject: {subject})')
-    plt.grid(True)
+#     # Plot for X Coordinate
+#     plt.subplot(1, 2, 1)
+#     plt.scatter(y_test[:, 0], y_pred[:, 0], alpha=0.5, color='blue')
+#     plt.plot([y_test[:, 0].min(), y_test[:, 0].max()], [y_test[:, 0].min(), y_test[:, 0].max()], 'r--')
+#     plt.xlabel('Actual X')
+#     plt.ylabel('Predicted X')
+#     plt.title(f'{model_name}: Actual vs Predicted X (Subject: {subject})')
+#     plt.grid(True)
     
-    # Plot for Y Coordinate
-    plt.subplot(1, 2, 2)
-    plt.scatter(y_test[:, 1], y_pred[:, 1], alpha=0.5, color='green')
-    plt.plot([y_test[:, 1].min(), y_test[:, 1].max()], [y_test[:, 1].min(), y_test[:, 1].max()], 'r--')
-    plt.xlabel('Actual Y')
-    plt.ylabel('Predicted Y')
-    plt.title(f'{model_name}: Actual vs Predicted Y (Subject: {subject})')
-    plt.grid(True)
+#     # Plot for Y Coordinate
+#     plt.subplot(1, 2, 2)
+#     plt.scatter(y_test[:, 1], y_pred[:, 1], alpha=0.5, color='green')
+#     plt.plot([y_test[:, 1].min(), y_test[:, 1].max()], [y_test[:, 1].min(), y_test[:, 1].max()], 'r--')
+#     plt.xlabel('Actual Y')
+#     plt.ylabel('Predicted Y')
+#     plt.title(f'{model_name}: Actual vs Predicted Y (Subject: {subject})')
+#     plt.grid(True)
     
-    plt.tight_layout()
-    plt.savefig(f'plots/{model_name}_Actual_vs_Predicted_{subject}.png')  # Save the plot
-    plt.show()
+#     plt.tight_layout()
+#     plt.savefig(f'plots/{model_name}_Actual_vs_Predicted_{subject}.png')  # Save the plot
+#     plt.show()
 
 def main():
     """
     Main function to execute the regression workflow.
     """
     # Define file paths
-    SENSOR_JSON_PATH = 'data/Filtered Transformer Input/subject1/lstm_sensor_input.json'  # Update as needed
-    CENTROIDS_JSON_PATH = 'data/Centroids/subject1/centroids.json'  # Update as needed
+    DATAFILE_PATH = 'project_main/data/Transformer Input/'
+    SENSOR_JSON_PATH = 'lstm_sensor_input.json'  # Update as needed
+    CENTROIDS_JSON_PATH = 'centroids.json'  # Update as needed
     
     # Define output directories
-    PLOTS_DIR = 'plots/'
-    MODELS_DIR = 'models/'
-    SCALERS_DIR = 'scalers/'
-    os.makedirs(PLOTS_DIR, exist_ok=True)
+    # PLOTS_DIR = 'plots/'
+    MODELS_DIR = 'project_main/models/'
+    # SCALERS_DIR = 'scalers/'
+    # os.makedirs(PLOTS_DIR, exist_ok=True)
     os.makedirs(MODELS_DIR, exist_ok=True)
-    os.makedirs(SCALERS_DIR, exist_ok=True)
     
-    # Step 1: Load sensor data
-    sensor_df = load_sensor_data(SENSOR_JSON_PATH)
-    print("Sensor data loaded successfully.")
-    
-    # Step 2: Load centroid data
-    centroid_df = load_centroid_data(CENTROIDS_JSON_PATH)
-    print("Centroid data loaded successfully.")
-    
-    # Step 3: Merge data
-    merged_df = merge_data(sensor_df, centroid_df)
-    print(f"Merged data contains {len(merged_df)} records.")
-    
+    merge_df_list = []
+    for sub in os.listdir(DATAFILE_PATH):
+        # Step 1: Load sensor data
+        sensor_df = load_sensor_data(DATAFILE_PATH + sub + '/' + SENSOR_JSON_PATH)
+        print("Sensor data loaded successfully.")
+        
+        # Step 2: Load centroid data
+        centroid_df = load_centroid_data(DATAFILE_PATH + sub + '/' + CENTROIDS_JSON_PATH)
+        print("Centroid data loaded successfully.")
+        
+        # Step 3: Merge data
+        merged_df = merge_data(sensor_df, centroid_df)
+        print(f"Merged data contains {len(merged_df)} records.")
+
+        merge_df_list.append(merged_df)
+
+    merged_df = pd.concat(merge_df_list)
+        
     # Step 4: Prepare features and targets
     X, y = prepare_features_targets(merged_df)
     print("Features and targets prepared.")
@@ -278,7 +284,7 @@ def main():
     lin_eval = evaluate_model(lin_reg, X_test, y_test, model_name='Linear Regression')
     
     # Step 10: Plot Linear Regression Predictions
-    plot_predictions(y_test.values, lin_eval['y_pred'], model_name='Linear Regression', subject='subject1')
+    # plot_predictions(y_test.values, lin_eval['y_pred'], model_name='Linear Regression', subject='subject1')
     
     # Step 11: Train Ridge Regression
     ridge_reg = train_ridge_regression(X_train, y_train, alpha=1.0)  # Adjust alpha as needed
@@ -288,7 +294,7 @@ def main():
     ridge_eval = evaluate_model(ridge_reg, X_test, y_test, model_name='Ridge Regression')
     
     # Step 13: Plot Ridge Regression Predictions
-    plot_predictions(y_test.values, ridge_eval['y_pred'], model_name='Ridge Regression', subject='subject1')
+    # plot_predictions(y_test.values, ridge_eval['y_pred'], model_name='Ridge Regression', subject='subject1')
     
     # Step 14: Save the models
     joblib.dump(lin_reg, os.path.join(MODELS_DIR, 'linear_regression_model.joblib'))
