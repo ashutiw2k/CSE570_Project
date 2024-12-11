@@ -6,6 +6,8 @@ import joblib
 from tensorflow.keras.models import load_model
 import matplotlib.pyplot as plt
 from sklearn.metrics import mean_absolute_error, mean_squared_error
+from sklearn.preprocessing import StandardScaler
+
 
 def load_scalers(features_scaler_path, targets_scaler_path):
     scaler_features = joblib.load(features_scaler_path)
@@ -26,98 +28,199 @@ def load_test_data(test_sensor_json_path, sequence_length, feature_cols):
     test_features = test_df.values
     return test_features, timestamps_test
 
-def create_sequences(X, sequence_length):
-    sequences = []
-    for i in range(len(X) - sequence_length + 1):
-        seq = X[i:i + sequence_length]
-        sequences.append(seq)
-    return np.array(sequences)
+def create_sequences(data, seq_length, feature_cols, target_cols):
+    X = []
+    y = []
+    t = []
+    for i in range(seq_length, len(data)):
+        X.append(data[feature_cols].iloc[i-seq_length:i].values)
+        y.append(data[target_cols].iloc[i].values)
+        t.append(data['timestamp'].iloc[i])
+    return np.array(X), np.array(y), t
+
+
+def unpack_centroid(dictval):
+    values = list(dictval.values())
+    return tuple(values[0])
+
 
 def main():
     # Define paths
-    MODEL_PATH = 'models/trained_lstm_model.h5'
-    SCALER_FEATURES_PATH = 'models/scaler_features.pkl'
-    SCALER_TARGETS_PATH = 'models/scaler_targets.pkl'
-    
-    # Define test data path
-    TEST_SENSOR_JSON_PATH = 'data/Filtered Transformer Input/subject1/lstm_sensor_input.json'  # Update as needed
-    
-    # Define output paths
-    OUTPUT_CSV_PATH = 'predictions/subject1_predictions.csv'  # Update as needed
-    PLOT_PATH = 'predictions/predicted_centroids_plot.png'  # Update as needed
-    
-    # Define feature columns (ensure this matches your preprocessing)
-    feature_cols = [
-        'feature_1', 'feature_2', 'feature_3',
-        'feature_4', 'feature_5', 'feature_6',
-        'feature_7', 'feature_8', 'feature_9',
-        'feature_10', 'feature_11', 'feature_12',
-        'x_prev', 'y_prev'
-        # Add additional engineered features here if applicable
-    ]
-    
+    MODEL_PATH = 'LeftSideMaskedLSTM.keras'
+    test_data_path = 'project_main/data/Testing/Transformer Input/'
+    sensor_file = 'lstm_sensor_input.json'
+    PREDICTIONS_PATH = 'project_main/predictions/'
+    OUTPUT_CSV_PATH = 'predictions.csv'  # Update as needed
+    PLOT_PATH = 'predicted_centroids_plot.png'  # Update as needed
+    # centroid_path = 'project_main/data/Transformer Input/'
+    centroid_file = 'centroids.json'
+
+    scaler = StandardScaler()
+    dataframe_list = []
+    train_centroid_df_list = []
+    for subject in os.listdir(test_data_path):
+        with open(test_data_path + subject + '/' + sensor_file, 'r') as f:
+            sensor_data = json.load(f)
+
+        with open(test_data_path + subject + '/' + centroid_file, 'r') as f:
+            centroid_data = json.load(f)
+
+        # Convert to DataFrame
+        sensor_df = pd.DataFrame(sensor_data)
+        # print(centroid_data)
+        feature_cols = ['Accelo_x', 'Accelo_y', 'Accelo_z',
+                    'Gyro_x', 'Gyro_y', 'Gyro_z',
+                    'Magneto_x', 'Magneto_y', 'Magneto_z',
+                    'Wifi_FTM_li_range', 'Wifi_FTM_li_std', 'WiFi_rssi']
+                    # 'x_prev', 'y_prev']
+        
+        sensor_df[feature_cols] = pd.DataFrame(sensor_df['features'].to_list(), index=sensor_df.index)
+
+        centroid_df = pd.DataFrame.from_dict(centroid_data, orient='index').reset_index()
+        centroid_df = centroid_df.rename(columns={'index': 'image_key', 0: 'centroid'})
+        # centroid_df = centroid_df.apply(transform_centroid, axis=1)
+        centroid_df['centroid'] = centroid_df['centroid'].apply(unpack_centroid)
+
+        # print(centroid_df)
+
+        # exit(1)
+
+        # Extract timestamp from image_key
+        centroid_df['timestamp'] = centroid_df['image_key'].apply(lambda x: x.split('_')[0] + '_' + x.split('_')[1] + '_' + x.split('_')[2])
+
+        # Merge sensor and centroid data
+        merged_df = pd.merge(sensor_df, centroid_df, on='timestamp', how='left')
+
+        # Handle null centroids
+        # merged_df['centroid'] = merged_df['centroid'].apply(lambda x: x[0]['centroid'] if pd.notnull(x) else [None, None])
+        # print(merged_df['centroid'].tolist())
+
+        # exit(1)
+
+        merged_df[['x', 'y']] = pd.DataFrame(merged_df['centroid'].tolist(), index=merged_df.index)
+
+        # Impute missing centroids (example: forward fill)
+        # merged_df[['x', 'y']] = merged_df[['x', 'y']].fillna(method='ffill')
+
+        # Create lag features (previous centroid)
+        merged_df['x_prev'] = merged_df['x'].shift(1)
+        merged_df['y_prev'] = merged_df['y'].shift(1)
+
+        # Drop the first row with NaN lag
+        merged_df = merged_df.dropna()
+
+        # Feature Columns
+        feature_cols = ['Accelo_x', 'Accelo_y', 'Accelo_z',
+                    'Gyro_x', 'Gyro_y', 'Gyro_z',
+                    'Magneto_x', 'Magneto_y', 'Magneto_z',
+                    'Wifi_FTM_li_range', 'Wifi_FTM_li_std', 'WiFi_rssi',
+                    'x_prev', 'y_prev']
+
+        # Target Columns
+        target_cols = ['x', 'y']
+
+        # Scaling
+        # merged_df[feature_cols] = scaler.fit_transform(merged_df[feature_cols])
+
+        dataframe_list.append(merged_df)
+
+
+    # Sequence Parameters
+    sequence_length = 10  # Number of past frames to consider
+
+    all_X = []
+    all_y = []
+    all_timestamps = []
+    for df in dataframe_list:
+        X, y, t = create_sequences(df, sequence_length, feature_cols, target_cols)
+        # Train-Test Split
+        # X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, shuffle=False)
+        all_X.extend(X)
+        # all_X_test.extend(X_test)
+        all_y.extend(y)
+        # all_y_test.extend(y_test)
+        all_timestamps.extend(t)
+
+    all_X = np.array(all_X)
+    all_y = np.array(all_y)
+                     
+
     # Define sequence length (must match the one used during training)
     SEQUENCE_LENGTH = 10  # Example value; update as per your training
-    
-    # Ensure output directory exists
-    os.makedirs(os.path.dirname(OUTPUT_CSV_PATH), exist_ok=True)
-    
-    # Step 1: Load scalers
-    scaler_features, scaler_targets = load_scalers(SCALER_FEATURES_PATH, SCALER_TARGETS_PATH)
-    print("Scalers loaded successfully.")
-    
-    # Step 2: Load test data
-    test_features, timestamps_test = load_test_data(TEST_SENSOR_JSON_PATH, SEQUENCE_LENGTH, feature_cols)
-    print(f"Test data loaded. Number of samples: {len(test_features)}")
-    
-    # Step 3: Scale test features
-    num_features = test_features.shape[2]
-    test_features_reshaped = test_features.reshape(-1, num_features)
-    test_features_scaled = scaler_features.transform(test_features_reshaped)
-    test_features_scaled = test_features_scaled.reshape(test_features.shape)
-    print("Test features scaled successfully.")
-    
-    # Step 4: Sequences are already created
-    X_test = test_features_scaled  # Shape: (samples, sequence_length, features)
-    print(f"Test sequences shape: {X_test.shape}")
+
+    print(f"Test sequences shape: {all_X.shape}")
+
+    # train_centriod_concat = pd.concat(train_centroid_df_list)
+    # # train_x = [data['x'] for data in train_centriod_df.]
+    # # train_x = [train_centriod_concat]
+    # print(train_centriod_concat.index)
+    # exit(0)
     
     # Step 5: Load the trained LSTM model
     model = load_model(MODEL_PATH)
     print("Trained LSTM model loaded successfully.")
     
     # Step 6: Make predictions
-    predictions_scaled = model.predict(X_test)
+    predictions = model.predict(all_X)
     print("Predictions made successfully.")
     
     # Step 7: Inverse transform predictions to original scale
-    predictions = scaler_targets.inverse_transform(predictions_scaled)
+    # scaler = StandardScaler()
+    # predictions = scaler.inverse_transform(predictions_scaled)
     print("Predictions inverse transformed successfully.")
     
     # Step 8: Align predictions with corresponding timestamps
-    adjusted_timestamps = timestamps_test[SEQUENCE_LENGTH -1 :]
-    
     # Create DataFrame
+
     predictions_df = pd.DataFrame({
-        'timestamp': adjusted_timestamps,
+        'timestamp': all_timestamps,
         'predicted_x': predictions[:, 0],
-        'predicted_y': predictions[:, 1]
+        'true_x': all_y[:, 0],
+        'predicted_y': predictions[:, 1],
+        'true_y' : all_y[:, 1]
     })
     
     # Step 9: Save predictions to CSV
-    predictions_df.to_csv(OUTPUT_CSV_PATH, index=False)
-    print(f"Predictions saved to {OUTPUT_CSV_PATH}")
+    predictions_df.to_csv(PREDICTIONS_PATH + OUTPUT_CSV_PATH, index=False)
+    print(f"Predictions saved to {PREDICTIONS_PATH + OUTPUT_CSV_PATH}")
     
     # Step 10: (Optional) Plotting Predicted Centroids
     plt.figure(figsize=(10, 6))
     plt.scatter(predictions_df['predicted_x'], predictions_df['predicted_y'], label='Predicted Centroids', alpha=0.6, c='blue')
+    
     plt.legend()
     plt.xlabel('X Coordinate')
     plt.ylabel('Y Coordinate')
     plt.title('Predicted Centroids')
     plt.grid(True)
-    plt.savefig(PLOT_PATH)
+    plt.savefig(PREDICTIONS_PATH + PLOT_PATH)
     plt.show()
-    print(f"Centroid predictions plotted and saved to {PLOT_PATH}")
+    print(f"Centroid predictions plotted and saved to {PREDICTIONS_PATH + PLOT_PATH}")
+
+    pred_df_per_subject = []
+
+    ctr = 0
+    for df in dataframe_list:
+        pred_sub_df = predictions_df[predictions_df['timestamp'].isin(df['timestamp'])]
+        pred_sub_df.to_csv(PREDICTIONS_PATH+ f'Subject{ctr}/' + OUTPUT_CSV_PATH, index=False)
+
+        plt.figure(figsize=(10, 6))
+        plt.scatter(pred_sub_df['predicted_x'], pred_sub_df['predicted_y'], label='Predicted Centroids', alpha=0.6, c='blue')
+        
+        plt.legend()
+        plt.xlabel('X Coordinate')
+        plt.ylabel('Y Coordinate')
+        plt.title('Predicted Centroids')
+        plt.grid(True)
+        plt.savefig(PREDICTIONS_PATH + f'Subject{ctr}/' + PLOT_PATH)
+        plt.show()
+        print(f"Centroid predictions plotted and saved to {PREDICTIONS_PATH + f'Subject{ctr}/' + PLOT_PATH}")
+        
+        plt.close()
+
+        ctr += 1
+
+
     
     # Optional Step 11: If Actual Centroids Are Available
     # Load actual centroids corresponding to the test timestamps

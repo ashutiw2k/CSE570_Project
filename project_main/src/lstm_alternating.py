@@ -87,8 +87,8 @@ for subject in os.listdir(data_path):
     target_cols = ['x', 'y']
 
     # Scaling
-    scaler = StandardScaler()
-    merged_df[feature_cols] = scaler.fit_transform(merged_df[feature_cols])
+    # scaler = StandardScaler()
+    # merged_df[feature_cols] = scaler.fit_transform(merged_df[feature_cols])
 
     dataframe_list.append(merged_df)
 
@@ -117,7 +117,7 @@ model.add(Dense(2))  # Output layer for [x, y] coordinates
 
 early_stopping = EarlyStopping(
     monitor='val_loss',  # Metric to monitor
-    patience=20,          # Number of epochs to wait before stopping
+    patience=8,          # Number of epochs to wait before stopping
     restore_best_weights=True  # Restore the weights from the best epoch
 )
 
