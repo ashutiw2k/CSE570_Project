@@ -219,7 +219,7 @@ def main():
     # os.makedirs(PLOTS_DIR, exist_ok=True)
     
     # Step 1: Load sensor data
-    for sub in os.listdir(DATAFILE_PATH):
+    for sub in sorted(os.listdir(DATAFILE_PATH)):
         # Step 1: Load sensor data
         sensor_df = load_sensor_data(DATAFILE_PATH + sub + '/' + SENSOR_JSON_PATH)
         print("Sensor data loaded successfully.")
