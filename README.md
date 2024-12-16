@@ -1,4 +1,4 @@
-1. Set Up a VENV using python venv. You can/should use the requirements.txt file
+<!-- 1. Set Up a VENV using python venv. You can/should use the requirements.txt file
 2. In the DATA.md, follow instructions to download the cleaned data
 3. In the README.MD, follow the steps to run a docker container.
 
@@ -18,4 +18,19 @@ docker run -d --ipc=host --shm-size=16384m -it -v /path/to/proj:/path/to/proj --
 
 
 
-pip install torch torchvision matplotlib Pillow
+pip install torch torchvision matplotlib Pillow -->
+
+Model Pipeline:
+
+![Model Pipeline](BeyondTheFrame_ModelPipeline.png)
+
+Subject Path GIF:
+(Blue - Predicted, Red - True)
+
+![Subject Path GIF](project_results/MergedFrames_PredictingSubjectInAStraightLine_Masked.gif)
+
+Subject Path Traced:
+(Blue - Predicted, Red - True)
+
+![Subject Path Traced](project_results/SubjectPathComparisons.png)
+
