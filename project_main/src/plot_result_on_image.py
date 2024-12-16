@@ -4,7 +4,8 @@ import cv2
 from tqdm import tqdm
 import numpy as np
 import math
-
+import matplotlib.pyplot as plt
+import json
 
 PREDICTIONS_DIR = 'project_main/predictions/'
 PREDICTED_FRAMES = 'PredictedFrames/'
@@ -60,9 +61,14 @@ def circle_overlap_area(center1, center2):
 
     return part1 + part2 - part3
 
+def plot_area_overlap(all_overlap_arr):
+    fig, ax = plt.subplots(figsize=(12,10))
+    # ax.plot()
+    
 
 if __name__ == '__main__':
 
+    all_area_overlap = []
     for subject in sorted(os.listdir(PREDICTIONS_DIR)):
         if os.path.isfile(PREDICTIONS_DIR + subject):
             continue
@@ -93,9 +99,13 @@ if __name__ == '__main__':
                                           writepath=write_img, writepath_masked=write_img_masked)
             
             area_overlap.append(circle_overlap_area(true_vals, pred_vals))
-        
+        all_area_overlap.append(area_overlap)
+
         print(f'Average IoU for {subject} is {np.mean(area_overlap)/100}')
 
+    plot_area_overlap(all_area_overlap)
+    with open(PREDICTIONS_DIR+'all_area_overlap.json', 'w') as f:
+        json.dump(all_area_overlap)
             # print(read_img, write_img)
 
 
