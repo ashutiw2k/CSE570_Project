@@ -34,8 +34,8 @@ Subject Path Traced:
 
 ![Subject Path Traced](project_results/SubjectPathComparisons.png)
 
-![Subject Path Traced in Masked Video](project_results/MergedFrames_FollowingSubjectIn_Masked.mp4)
+[![Subject Path Traced in Masked Video](project_results/MergedFrames_FollowingSubjectIn_Masked.mp4)](project_results/MergedFrames_FollowingSubjectIn_Masked.mp4)
 (Blue - Predicted, Red - True)
 
-![Subject Path Traced in UnMasked Video](project_results/MergedFrames_FollowingSubjectIn_UnMasked.mp4)
+[![Subject Path Traced in UnMasked Video](project_results/MergedFrames_FollowingSubjectIn_UnMasked.mp4)](project_results/MergedFrames_FollowingSubjectIn_UnMasked.mp4)
 (Blue - Predicted, Red - True)
