@@ -34,8 +34,8 @@ Subject Path Traced:
 
 ![Subject Path Traced](project_results/SubjectPathComparisons.png)
 
-[![Subject Path Traced in Masked Video](https://raw.githubusercontent.com/ashutiw2k/CSE570_Project/blob/main/project_results/MergedFrames_FollowingSubjectIn_Masked.mp4)](https://raw.githubusercontent.com/ashutiw2k/CSE570_Project/blob/main/project_results/MergedFrames_FollowingSubjectIn_Masked.mp4)
+[![Subject Path Traced in Masked Video](https://raw.githubusercontent.com/ashutiw2k/CSE570_Project/main/project_results/MergedFrames_FollowingSubjectIn_Masked.mp4)](https://raw.githubusercontent.com/ashutiw2k/CSE570_Project/main/project_results/MergedFrames_FollowingSubjectIn_Masked.mp4)
 (Blue - Predicted, Red - True)
 
-[![Subject Path Traced in Unmasked Video](https://raw.githubusercontent.com/ashutiw2k/CSE570_Project/blob/main/project_results/MergedFrames_FollowingSubjectIn_UnMasked.mp4)](https://raw.githubusercontent.com/ashutiw2k/CSE570_Project/blob/main/project_results/MergedFrames_FollowingSubjectIn_UnMasked.mp4)
+[![Subject Path Traced in Unmasked Video](https://raw.githubusercontent.com/ashutiw2k/CSE570_Project/main/project_results/MergedFrames_FollowingSubjectIn_UnMasked.mp4)](https://raw.githubusercontent.com/ashutiw2k/CSE570_Project/main/project_results/MergedFrames_FollowingSubjectIn_UnMasked.mp4)
 (Blue - Predicted, Red - True)
