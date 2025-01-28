@@ -20,6 +20,12 @@ docker run -d --ipc=host --shm-size=16384m -it -v /path/to/proj:/path/to/proj --
 
 pip install torch torchvision matplotlib Pillow -->
 
+# Data Location
+1. [Google Drive](https://drive.google.com/drive/folders/1fq2zsYxU7wuyFZo_Cs-kfliL1KTGYX_4?usp=sharing) with all the data.
+2. [GitHub Repo](https://github.com/ashutiw2k/CSE570_ProjectData/tree/main) describing the data zip files. 
+
+# Model Information and Results
+
 Model Pipeline:
 
 ![Model Pipeline](BeyondTheFrame_ModelPipeline.png)
